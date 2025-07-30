@@ -1,9 +1,11 @@
 name: HopeCraft
-version: '1.0.1'
 main: org.hopestudio.hopeCraft.HopeCraft
-api-version: '1.21'
-
+version: 1.5.0
+api-version: "1.21"
 commands:
   hopecraft:
-    description: 使用HopeCraft面板
-    usage: /<command>
+    description: 打开HopeCraft主菜单
+    usage: /hopecraft
+  skull:
+    description: 获取玩家头颅
+    usage: /skull [玩家名]
