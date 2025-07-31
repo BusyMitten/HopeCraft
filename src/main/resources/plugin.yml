@@ -1,6 +1,6 @@
 name: HopeCraft
 main: org.hopestudio.hopeCraft.HopeCraft
-version: 1.5.0
+version: 1.6.0
 api-version: "1.21"
 commands:
   hopecraft:
@@ -9,3 +9,4 @@ commands:
   skull:
     description: 获取玩家头颅
     usage: /skull [玩家名]
+

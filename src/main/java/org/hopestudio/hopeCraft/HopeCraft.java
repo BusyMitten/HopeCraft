@@ -144,7 +144,7 @@ public final class HopeCraft extends JavaPlugin {
         }
         return command;
     }
-    // =====================================================
+    // =====================================
 
     public void say(String s) {
         CommandSender sender = Bukkit.getConsoleSender();
@@ -576,12 +576,22 @@ public final class HopeCraft extends JavaPlugin {
 
     // ========== 快捷键监听器 ==========
     private class KeyListener implements Listener {
-        @EventHandler
+        @EventHandler(priority = EventPriority.HIGH)
         public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
-            // === ShiftAndF 主要触发点 ===
             Player player = event.getPlayer();
+
+            // 调试日志
+            getLogger().info("检测到玩家交换手部物品: " + player.getName() +
+                    ", 潜行状态: " + player.isSneaking());
+
+            // 检查是否满足触发条件
             if (player.isSneaking() && shiftFEnabled && !shiftFCommands.isEmpty()) {
+                getLogger().info("触发 Shift+F 快捷键: " + player.getName());
+
+                // 执行命令
                 shiftFTrigger(player);
+
+                // 取消事件以防止物品交换
                 event.setCancelled(true);
             }
         }
@@ -642,4 +652,8 @@ public final class HopeCraft extends JavaPlugin {
             getLogger().warning("获取头颅失败: " + e.getMessage());
         }
     }
+    //debug
+
+
 }
+//神必彩蛋
