@@ -1,5 +1,6 @@
 package org.hopestudio.hopeCraft;
 
+// me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.*;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
@@ -14,6 +15,7 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.sql.*;
@@ -28,8 +30,19 @@ public final class HopeCraft extends JavaPlugin {
     private final Map<UUID, PlayerStats> playerStats = new ConcurrentHashMap<>();
     private File dataFolder;
 
+    // === ShiftAndF 功能整合 ===============================
+    boolean shiftFEnabled = true;
+    boolean hasPapi;
+    List<String> shiftFCommands;
+    // ====================================================
+
     @Override
     public void onEnable() {
+        // === ShiftAndF 初始化 ===
+        shiftFCommands = new LinkedList<>();
+        initShiftFConfig();
+
+        // ===== 原 HopeCraft 初始化 =====
         // 初始化数据目录
         dataFolder = getDataFolder();
         if (!dataFolder.exists()) dataFolder.mkdirs();
@@ -56,6 +69,10 @@ public final class HopeCraft extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // === ShiftAndF 清理 ===
+        shiftFCommands.clear();
+
+        // === 原 HopeCraft 清理 ===
         // 安全关闭数据库
         try {
             if (connection != null && !connection.isClosed()) {
@@ -66,6 +83,68 @@ public final class HopeCraft extends JavaPlugin {
         }
         say("插件HopeCraft已禁用！");
     }
+
+    // === ShiftAndF 配置处理 ===============================
+    private void initShiftFConfig() {
+        // 加载配置文件
+        saveDefaultConfig();
+        shiftFEnabled = getConfig().getBoolean("shiftF-enabled", true);
+
+        // 加载命令列表
+        List<String> tmpLst = getConfig().getStringList("shiftF-commands");
+        for (String command : tmpLst) {
+            if (command == null || command.length() < 2 ||
+                    (command.charAt(0) != 'c' && command.charAt(0) != 'p') ||
+                    command.charAt(1) != ':') {
+                getLogger().warning("§e已忽略错误的shift+F命令格式：" + command);
+            } else {
+                shiftFCommands.add(command);
+            }
+        }
+
+        // 检查PAPI
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            hasPapi = true;
+            getLogger().info("§9检测到PlaceholderAPI，启用占位符功能");
+        } else {
+            hasPapi = false;
+            getLogger().info("§9未检测到PlaceholderAPI，禁用占位符功能");
+        }
+    }
+
+    private void shiftFTrigger(Player player) {
+        if (!shiftFEnabled || shiftFCommands.isEmpty()) return;
+        if (!player.isSneaking()) return;
+
+        for (String command : shiftFCommands) {
+            String formattedCmd = formatCommand(command.substring(2), player);
+            if (command.charAt(0) == 'c') {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), formattedCmd);
+            } else {
+                player.performCommand(formattedCmd);
+            }
+        }
+    }
+
+    private String formatCommand(String command, Player player) {
+        if (command == null || command.isEmpty()) {
+            return "";
+        }
+
+        // 检查 PlaceholderAPI 是否可用
+        if (hasPapi && player != null) {
+            try {
+                // 使用反射调用 PlaceholderAPI 以避免编译依赖问题
+                Class<?> papiClass = Class.forName("me.clip.placeholderapi.PlaceholderAPI");
+                java.lang.reflect.Method setPlaceholders = papiClass.getMethod("setPlaceholders", Player.class, String.class);
+                command = (String) setPlaceholders.invoke(null, player, command);
+            } catch (Exception e) {
+                getLogger().warning("PlaceholderAPI 处理失败: " + e.getMessage());
+            }
+        }
+        return command;
+    }
+    // =====================================================
 
     public void say(String s) {
         CommandSender sender = Bukkit.getConsoleSender();
@@ -211,6 +290,21 @@ public final class HopeCraft extends JavaPlugin {
     private void openMainMenu(Player player) {
         Inventory menu = Bukkit.createInventory(null, 54, "HopeCraft 主菜单");
 
+        // === ShiftAndF 状态按钮 ===
+        ItemStack shiftFToggle = new ItemStack(
+                shiftFEnabled ? Material.LIME_DYE : Material.GRAY_DYE
+        );
+        ItemMeta shiftFMeta = shiftFToggle.getItemMeta();
+        shiftFMeta.setDisplayName(ChatColor.YELLOW + "Shift+F快捷键");
+        List<String> shiftFLore = new ArrayList<>();
+        shiftFLore.add(ChatColor.GRAY + "状态: " + (shiftFEnabled ?
+                ChatColor.GREEN + "已启用" : ChatColor.RED + "已禁用"));
+        shiftFLore.add(ChatColor.GRAY + "可执行命令数量: " + ChatColor.GOLD + shiftFCommands.size());
+        shiftFLore.add(ChatColor.DARK_GRAY + "点击切换状态");
+        shiftFMeta.setLore(shiftFLore);
+        shiftFToggle.setItemMeta(shiftFMeta);
+        menu.setItem(22, shiftFToggle);  // 菜单中心附近
+
         // 传送按钮
         ItemStack teleportItem = new ItemStack(Material.COMPASS);
         ItemMeta teleportMeta = teleportItem.getItemMeta();
@@ -264,22 +358,56 @@ public final class HopeCraft extends JavaPlugin {
 
     // ========== 命令处理 ==========
     @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, Command cmd, @NotNull String label, String @NotNull [] args) {
         if (cmd.getName().equalsIgnoreCase("hopecraft")) {
-            if (!(sender instanceof Player)) {
+            if (!(sender instanceof Player player)) {
                 sender.sendMessage(ChatColor.RED + "只有玩家可以使用此命令！");
                 return true;
             }
-            Player player = (Player) sender;
+
+            // 处理子命令
+            if (args.length > 0) {
+                // === ShiftAndF 子命令 ===
+                if (args[0].equalsIgnoreCase("shiftf")) {
+                    if (args.length < 2) {
+                        player.sendMessage(ChatColor.RED + "用法: /hopecraft shiftf <on|off|reload>");
+                        return true;
+                    }
+
+                    String subcmd = args[1].toLowerCase();
+                    switch (subcmd) {
+                        case "on":
+                            shiftFEnabled = true;
+                            player.sendMessage(ChatColor.GREEN + "Shift+F快捷键已启用");
+                            return true;
+
+                        case "off":
+                            shiftFEnabled = false;
+                            player.sendMessage(ChatColor.GREEN + "Shift+F快捷键已禁用");
+                            return true;
+
+                        case "reload":
+                            reloadShiftFConfig();
+                            player.sendMessage(ChatColor.GREEN + "Shift+F配置已重载");
+                            return true;
+
+                        default:
+                            player.sendMessage(ChatColor.RED + "无效的命令: /hopecraft shiftf <on|off|reload>");
+                            return true;
+                    }
+                }
+                // 其他子命令...
+            }
+
+            // 默认打开菜单
             openMainMenu(player);
             return true;
         }
         else if (cmd.getName().equalsIgnoreCase("skull")) {
-            if (!(sender instanceof Player)) {
+            if (!(sender instanceof Player player)) {
                 sender.sendMessage(ChatColor.RED + "只有玩家可以使用此命令！");
                 return true;
             }
-            Player player = (Player) sender;
 
             if (args.length == 0) {
                 giveSkull(player, player.getName()); // 默认获取自己的头颅
@@ -290,6 +418,58 @@ public final class HopeCraft extends JavaPlugin {
         }
         return false;
     }
+
+    // === ShiftAndF 重载方法 =====
+    private void reloadShiftFConfig() {
+        reloadConfig();
+        shiftFCommands.clear();
+
+        List<String> tmpLst = getConfig().getStringList("shiftF-commands");
+        for (String command : tmpLst) {
+            if (command == null || command.length() < 2 ||
+                    (command.charAt(0) != 'c' && command.charAt(0) != 'p') ||
+                    command.charAt(1) != ':') {
+                getLogger().warning("§e已忽略错误的shift+F命令格式：" + command);
+            } else {
+                shiftFCommands.add(command);
+            }
+        }
+
+        shiftFEnabled = getConfig().getBoolean("shiftF-enabled", true);
+        getLogger().info("Shift+F配置已重载，加载命令数: " + shiftFCommands.size());
+    }
+
+    public void hasTrigger(PlayerSwapHandItemsEvent event) {
+        Player player = event.getPlayer();
+        if (player.isSneaking() && shiftFEnabled && !shiftFCommands.isEmpty()) {
+            shiftFTrigger(player);
+            event.setCancelled(true);
+        }
+    }
+
+    public void listenOn(CommandSender commandSender) {
+        if (!shiftFEnabled) {
+            shiftFEnabled = true;
+            commandSender.sendMessage("§7[§bHopeCraft§7] §aShift+F监听开启成功");
+        } else {
+            commandSender.sendMessage("§7[§bHopeCraft§7] §eShift+F监听已经处于开启状态");
+        }
+    }
+
+    public void listenOff(CommandSender commandSender) {
+        if (shiftFEnabled) {
+            shiftFEnabled = false;
+            commandSender.sendMessage("§7[§bHopeCraft§7] §aShift+F监听关闭成功");
+        } else {
+            commandSender.sendMessage("§7[§bHopeCraft§7] §eShift+F监听已经处于关闭状态");
+        }
+    }
+
+    public void reload(CommandSender commandSender) {
+        reloadShiftFConfig();
+        commandSender.sendMessage("§7[§bHopeCraft§7] §aShift+F配置重载成功!");
+    }
+    // =============================
 
     // ========== 内部类 ==========
     private static class PlayerStats {
@@ -354,6 +534,14 @@ public final class HopeCraft extends JavaPlugin {
                     player.sendMessage(ChatColor.GREEN + "已获取你的头颅！输入 /skull <玩家名> 可获取其他玩家头颅");
                     player.closeInventory();
                     break;
+
+                // === ShiftAndF 菜单按钮 ===
+                case 22:
+                    shiftFEnabled = !shiftFEnabled;
+                    player.sendMessage(ChatColor.GREEN + "Shift+F快捷键: " +
+                            (shiftFEnabled ? "已启用" : "已禁用"));
+                    openMainMenu(player); // 刷新菜单显示新状态
+                    break;
             }
         }
     }
@@ -386,40 +574,15 @@ public final class HopeCraft extends JavaPlugin {
         }
     }
 
-    // ========== 修复的快捷键监听器 ==========
+    // ========== 快捷键监听器 ==========
     private class KeyListener implements Listener {
-        private final Set<UUID> shiftPressed = new HashSet<>();
-        private final Map<UUID, Long> lastPressTime = new ConcurrentHashMap<>();
-
         @EventHandler
-        public void onShiftPress(PlayerToggleSneakEvent event) {
-            UUID uuid = event.getPlayer().getUniqueId();
-            if (event.isSneaking()) {
-                shiftPressed.add(uuid);
-            } else {
-                shiftPressed.remove(uuid);
-            }
-        }
-
-        @EventHandler
-        public void onSlotChange(PlayerItemHeldEvent event) {
+        public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
+            // === ShiftAndF 主要触发点 ===
             Player player = event.getPlayer();
-            UUID uuid = player.getUniqueId();
-
-            // 检查Shift+F组合键
-            if (shiftPressed.contains(uuid) && event.getNewSlot() == 4) {
-                long now = System.currentTimeMillis();
-                if (now - lastPressTime.getOrDefault(uuid, 0L) < 500) return;
-
-                lastPressTime.put(uuid, now);
-
-                // 延迟执行命令以避免与副手交互冲突
-                Bukkit.getScheduler().runTaskLater(HopeCraft.this, () -> {
-                    if (shiftPressed.contains(uuid)) {
-                        openMainMenu(player);
-                        shiftPressed.remove(uuid);
-                    }
-                }, 1L);
+            if (player.isSneaking() && shiftFEnabled && !shiftFCommands.isEmpty()) {
+                shiftFTrigger(player);
+                event.setCancelled(true);
             }
         }
     }
