@@ -72,13 +72,24 @@ public final class HopeCraft extends JavaPlugin {
         shiftFCommands.clear();
 
         // === 原 HopeCraft 清理 ===
+        // 保存所有在线玩家的统计数据
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            savePlayerStats(player.getUniqueId());
+        }
+        
         // 安全关闭数据库
         try {
             if (connection != null && !connection.isClosed()) {
+                // 执行一次检查点以确保所有数据都写入磁盘
+                try (Statement stmt = connection.createStatement()) {
+                    stmt.execute("PRAGMA wal_checkpoint(FULL)");
+                }
                 connection.close();
+                getLogger().info("数据库连接已安全关闭");
             }
         } catch (SQLException e) {
-            getLogger().warning("数据库关闭异常: " + e.getMessage());
+            getLogger().severe("数据库关闭异常: " + e.getMessage());
+            e.printStackTrace();
         }
         say("插件HopeCraft已禁用！");
     }
@@ -158,9 +169,13 @@ public final class HopeCraft extends JavaPlugin {
     private void initDatabase() {
         try {
             Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:" + dataFolder.getAbsolutePath() + "/data.db");
+            File dbFile = new File(dataFolder, "data.db");
+            connection = DriverManager.getConnection("jdbc:sqlite:" + dbFile.getAbsolutePath());
 
             try (Statement stmt = connection.createStatement()) {
+                // 启用外键约束（如果需要）
+                stmt.execute("PRAGMA foreign_keys = ON");
+                
                 stmt.execute("CREATE TABLE IF NOT EXISTS sign_ins (" +
                         "player_uuid TEXT PRIMARY KEY, " +
                         "last_sign_date TEXT, " +
@@ -172,13 +187,29 @@ public final class HopeCraft extends JavaPlugin {
                         "blocks_broken INTEGER DEFAULT 0, " +
                         "deaths INTEGER DEFAULT 0)");
             }
+            
+            getLogger().info("数据库连接成功: " + dbFile.getAbsolutePath());
         } catch (Exception e) {
             getLogger().severe("数据库初始化失败: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     private void ensureConnection() throws SQLException {
-        if (connection == null || connection.isClosed()) {
+        try {
+            if (connection == null || connection.isClosed()) {
+                getLogger().warning("数据库连接已断开，正在重新连接...");
+                initDatabase();
+            }
+            
+            // 测试连接是否有效
+            if (!connection.isValid(5)) {
+                getLogger().warning("数据库连接无效，正在重新连接...");
+                connection.close();
+                initDatabase();
+            }
+        } catch (SQLException e) {
+            getLogger().severe("数据库连接检查失败: " + e.getMessage());
             initDatabase();
         }
     }
@@ -193,10 +224,13 @@ public final class HopeCraft extends JavaPlugin {
                     "SELECT last_sign_date FROM sign_ins WHERE player_uuid = ?")) {
                 ps.setString(1, uuid.toString());
                 ResultSet rs = ps.executeQuery();
-                return !rs.next() || !today.equals(rs.getString("last_sign_date"));
+                boolean canSign = !rs.next() || !today.equals(rs.getString("last_sign_date"));
+                getLogger().info("玩家 " + uuid + " 签到检查结果: " + (canSign ? "可以签到" : "今日已签到"));
+                return canSign;
             }
         } catch (SQLException e) {
-            getLogger().warning("签到检查失败: " + e.getMessage());
+            getLogger().severe("签到检查失败: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
@@ -215,13 +249,16 @@ public final class HopeCraft extends JavaPlugin {
                 ps.setString(1, uuid.toString());
                 ps.setString(2, today);
                 ps.setString(3, uuid.toString());
-                ps.executeUpdate();
+                int result = ps.executeUpdate();
+                getLogger().info("玩家 " + player.getName() + " 签到完成，影响行数: " + result);
             }
 
             // 发放奖励
             giveSignReward(player);
         } catch (SQLException e) {
-            getLogger().warning("签到处理失败: " + e.getMessage());
+            getLogger().severe("签到处理失败: " + e.getMessage());
+            player.sendMessage(ChatColor.RED + "签到失败，请联系管理员");
+            e.printStackTrace();
         }
     }
 
@@ -262,16 +299,26 @@ public final class HopeCraft extends JavaPlugin {
                             rs.getInt("blocks_broken"),
                             rs.getInt("deaths")
                     ));
+                    getLogger().info("成功加载玩家 " + uuid + " 的统计数据");
+                } else {
+                    getLogger().info("未找到玩家 " + uuid + " 的统计数据，使用默认值");
+                    playerStats.put(uuid, new PlayerStats(0, 0, 0));
                 }
             }
         } catch (SQLException e) {
-            getLogger().warning("统计加载失败: " + e.getMessage());
+            getLogger().severe("统计加载失败: " + e.getMessage());
+            e.printStackTrace();
+            // 即使加载失败，也放入默认值以避免空指针异常
+            playerStats.put(uuid, new PlayerStats(0, 0, 0));
         }
     }
 
     private void savePlayerStats(UUID uuid) {
         PlayerStats stats = playerStats.get(uuid);
-        if (stats == null) return;
+        if (stats == null) {
+            getLogger().warning("尝试保存空统计数据: " + uuid);
+            return;
+        }
 
         try {
             ensureConnection();
@@ -282,10 +329,12 @@ public final class HopeCraft extends JavaPlugin {
                 ps.setInt(2, stats.kills);
                 ps.setInt(3, stats.blocksBroken);
                 ps.setInt(4, stats.deaths);
-                ps.executeUpdate();
+                int result = ps.executeUpdate();
+                getLogger().info("成功保存玩家 " + uuid + " 的统计数据，影响行数: " + result);
             }
         } catch (SQLException e) {
-            getLogger().warning("统计保存失败: " + e.getMessage());
+            getLogger().severe("统计保存失败: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
