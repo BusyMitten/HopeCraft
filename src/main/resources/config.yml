@@ -1,7 +1,6 @@
 # Shift+F 功能配置
 shiftF-enabled: true
 shiftF-commands:
-  - "c:say %player_name% 使用了Shift+F快捷键!"
-  - "p:msg %player_name% 你好!"
+  - "p:hopecraft"
 
 # 其他配置项可以放在这里...
