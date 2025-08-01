@@ -1,6 +1,5 @@
 package org.hopestudio.hopeCraft;
 
-// me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.*;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
@@ -91,6 +90,19 @@ public final class HopeCraft extends JavaPlugin {
         shiftFEnabled = getConfig().getBoolean("shiftF-enabled", true);
 
         // 加载命令列表
+        loadCmd();
+
+        // 检查PAPI
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            hasPapi = true;
+            getLogger().info("§9检测到PlaceholderAPI，启用占位符功能");
+        } else {
+            hasPapi = false;
+            getLogger().info("§9未检测到PlaceholderAPI，禁用占位符功能");
+        }
+    }
+
+    private void loadCmd() {
         List<String> tmpLst = getConfig().getStringList("shiftF-commands");
         for (String command : tmpLst) {
             if (command == null || command.length() < 2 ||
@@ -100,15 +112,6 @@ public final class HopeCraft extends JavaPlugin {
             } else {
                 shiftFCommands.add(command);
             }
-        }
-
-        // 检查PAPI
-        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
-            hasPapi = true;
-            getLogger().info("§9检测到PlaceholderAPI，启用占位符功能");
-        } else {
-            hasPapi = false;
-            getLogger().info("§9未检测到PlaceholderAPI，禁用占位符功能");
         }
     }
 
@@ -291,19 +294,10 @@ public final class HopeCraft extends JavaPlugin {
         Inventory menu = Bukkit.createInventory(null, 54, "HopeCraft 主菜单");
 
         // === ShiftAndF 状态按钮 ===
-        ItemStack shiftFToggle = new ItemStack(
-                shiftFEnabled ? Material.LIME_DYE : Material.GRAY_DYE
-        );
-        ItemMeta shiftFMeta = shiftFToggle.getItemMeta();
-        shiftFMeta.setDisplayName(ChatColor.YELLOW + "Shift+F快捷键");
-        List<String> shiftFLore = new ArrayList<>();
-        shiftFLore.add(ChatColor.GRAY + "状态: " + (shiftFEnabled ?
-                ChatColor.GREEN + "已启用" : ChatColor.RED + "已禁用"));
-        shiftFLore.add(ChatColor.GRAY + "可执行命令数量: " + ChatColor.GOLD + shiftFCommands.size());
-        shiftFLore.add(ChatColor.DARK_GRAY + "点击切换状态");
-        shiftFMeta.setLore(shiftFLore);
-        shiftFToggle.setItemMeta(shiftFMeta);
-        menu.setItem(22, shiftFToggle);  // 菜单中心附近
+        if(player.hasPermission("hopecraft.admin")) {
+            ItemStack shiftFToggle = getItemStack();
+            menu.setItem(22, shiftFToggle);  // 菜单中心附近
+        }
 
         // 传送按钮
         ItemStack teleportItem = new ItemStack(Material.COMPASS);
@@ -356,6 +350,22 @@ public final class HopeCraft extends JavaPlugin {
         player.openInventory(menu);
     }
 
+    private @NotNull ItemStack getItemStack() {
+        ItemStack shiftFToggle = new ItemStack(
+                shiftFEnabled ? Material.LIME_DYE : Material.GRAY_DYE
+        );
+        ItemMeta shiftFMeta = shiftFToggle.getItemMeta();
+        shiftFMeta.setDisplayName(ChatColor.YELLOW + "Shift+F快捷键");
+        List<String> shiftFLore = new ArrayList<>();
+        shiftFLore.add(ChatColor.GRAY + "状态: " + (shiftFEnabled ?
+                ChatColor.GREEN + "已启用" : ChatColor.RED + "已禁用"));
+        shiftFLore.add(ChatColor.GRAY + "可执行命令数量: " + ChatColor.GOLD + shiftFCommands.size());
+        shiftFLore.add(ChatColor.DARK_GRAY + "点击切换状态");
+        shiftFMeta.setLore(shiftFLore);
+        shiftFToggle.setItemMeta(shiftFMeta);
+        return shiftFToggle;
+    }
+
     // ========== 命令处理 ==========
     @Override
     public boolean onCommand(@NotNull CommandSender sender, Command cmd, @NotNull String label, String @NotNull [] args) {
@@ -369,6 +379,10 @@ public final class HopeCraft extends JavaPlugin {
             if (args.length > 0) {
                 // === ShiftAndF 子命令 ===
                 if (args[0].equalsIgnoreCase("shiftf")) {
+                    if (!player.hasPermission("hopecraft.admin")) {
+                        player.sendMessage(ChatColor.RED + "你没有权限使用此命令！");
+                        return true;
+                    }
                     if (args.length < 2) {
                         player.sendMessage(ChatColor.RED + "用法: /hopecraft shiftf <on|off|reload>");
                         return true;
@@ -396,6 +410,9 @@ public final class HopeCraft extends JavaPlugin {
                             return true;
                     }
                 }
+                else {
+                    player.sendMessage(ChatColor.RED + "无效的命令: /hopecraft <shiftf>");
+                }
                 // 其他子命令...
             }
 
@@ -419,21 +436,53 @@ public final class HopeCraft extends JavaPlugin {
         return false;
     }
 
+    @Override
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
+        List<String> completions = new ArrayList<>();
+        
+        if (command.getName().equalsIgnoreCase("hopecraft")) {
+            if (args.length == 1) {
+                // 第一个参数补全
+                completions.add("shiftf");
+                // 可以添加其他主命令参数
+            } else if (args.length == 2 && args[0].equalsIgnoreCase("shiftf")) {
+                // /hopecraft shiftf <参数> 的补全
+                completions.add("on");
+                completions.add("off");
+                completions.add("reload");
+            }
+        }
+        
+        // 过滤补全结果
+        return filterCompletions(completions, args[args.length - 1]);
+    }
+    
+    /**
+     * 过滤补全建议，只返回匹配前缀的项
+     * @param completions 所有补全建议
+     * @param prefix 输入前缀
+     * @return 匹配的补全建议
+     */
+    private List<String> filterCompletions(List<String> completions, String prefix) {
+        if (prefix.isEmpty()) {
+            return completions;
+        }
+        
+        List<String> result = new ArrayList<>();
+        for (String completion : completions) {
+            if (completion.toLowerCase().startsWith(prefix.toLowerCase())) {
+                result.add(completion);
+            }
+        }
+        return result;
+    }
+
     // === ShiftAndF 重载方法 =====
     private void reloadShiftFConfig() {
         reloadConfig();
         shiftFCommands.clear();
 
-        List<String> tmpLst = getConfig().getStringList("shiftF-commands");
-        for (String command : tmpLst) {
-            if (command == null || command.length() < 2 ||
-                    (command.charAt(0) != 'c' && command.charAt(0) != 'p') ||
-                    command.charAt(1) != ':') {
-                getLogger().warning("§e已忽略错误的shift+F命令格式：" + command);
-            } else {
-                shiftFCommands.add(command);
-            }
-        }
+        loadCmd();
 
         shiftFEnabled = getConfig().getBoolean("shiftF-enabled", true);
         getLogger().info("Shift+F配置已重载，加载命令数: " + shiftFCommands.size());
@@ -447,50 +496,21 @@ public final class HopeCraft extends JavaPlugin {
         }
     }
 
-    public void listenOn(CommandSender commandSender) {
-        if (!shiftFEnabled) {
-            shiftFEnabled = true;
-            commandSender.sendMessage("§7[§bHopeCraft§7] §aShift+F监听开启成功");
-        } else {
-            commandSender.sendMessage("§7[§bHopeCraft§7] §eShift+F监听已经处于开启状态");
-        }
-    }
-
-    public void listenOff(CommandSender commandSender) {
-        if (shiftFEnabled) {
-            shiftFEnabled = false;
-            commandSender.sendMessage("§7[§bHopeCraft§7] §aShift+F监听关闭成功");
-        } else {
-            commandSender.sendMessage("§7[§bHopeCraft§7] §eShift+F监听已经处于关闭状态");
-        }
-    }
-
-    public void reload(CommandSender commandSender) {
-        reloadShiftFConfig();
-        commandSender.sendMessage("§7[§bHopeCraft§7] §aShift+F配置重载成功!");
-    }
-    // =============================
-
     // ========== 内部类 ==========
-    private static class PlayerStats {
-        private int kills;
-        private int blocksBroken;
-        private int deaths;
+        private record PlayerStats(int kills, int blocksBroken, int deaths) {
 
-        public PlayerStats(int kills, int blocksBroken, int deaths) {
-            this.kills = kills;
-            this.blocksBroken = blocksBroken;
-            this.deaths = deaths;
+        public PlayerStats addKillStats() {
+            return new PlayerStats(kills + 1, blocksBroken, deaths);
         }
 
-        public int getKills() { return kills; }
-        public int getBlocksBroken() { return blocksBroken; }
-        public int getDeaths() { return deaths; }
+        public PlayerStats addBlockBrokenStats() {
+            return new PlayerStats(kills, blocksBroken + 1, deaths);
+        }
 
-        public PlayerStats addKillStats() { return new PlayerStats(kills + 1, blocksBroken, deaths); }
-        public PlayerStats addBlockBrokenStats() { return new PlayerStats(kills, blocksBroken + 1, deaths); }
-        public PlayerStats addDeathStats() { return new PlayerStats(kills, blocksBroken, deaths + 1); }
-    }
+        public PlayerStats addDeathStats() {
+            return new PlayerStats(kills, blocksBroken, deaths + 1);
+        }
+        }
 
     private class InventoryListener implements Listener {
         @EventHandler
@@ -623,9 +643,9 @@ public final class HopeCraft extends JavaPlugin {
                 ChatColor.YELLOW + "" + ChatColor.BOLD + player.getName() + " 的统计");
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-        obj.getScore(ChatColor.GREEN + "击杀数: " + ChatColor.WHITE).setScore(stats.getKills());
-        obj.getScore(ChatColor.BLUE + "挖掘数: " + ChatColor.WHITE).setScore(stats.getBlocksBroken());
-        obj.getScore(ChatColor.RED + "死亡数: " + ChatColor.WHITE).setScore(stats.getDeaths());
+        obj.getScore(ChatColor.GREEN + "击杀数: " + ChatColor.WHITE).setScore(stats.kills());
+        obj.getScore(ChatColor.BLUE + "挖掘数: " + ChatColor.WHITE).setScore(stats.blocksBroken());
+        obj.getScore(ChatColor.RED + "死亡数: " + ChatColor.WHITE).setScore(stats.deaths());
 
         player.setScoreboard(board);
     }
