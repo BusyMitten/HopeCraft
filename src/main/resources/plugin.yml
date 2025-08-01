@@ -1,6 +1,6 @@
 name: HopeCraft
 main: org.hopestudio.hopeCraft.HopeCraft
-version: 1.6.1
+version: 1.6.2
 api-version: "1.21"
 commands:
   hopecraft:

@@ -554,6 +554,11 @@ public final class HopeCraft extends JavaPlugin {
                 playerStats.compute(killer.getUniqueId(), (uuid, stats) ->
                         stats == null ? new PlayerStats(1, 0, 0) : stats.addKillStats());
                 savePlayerStats(killer.getUniqueId());
+                
+                // 实时更新计分板
+                if (killer.getScoreboard().getObjective("stats") != null) {
+                    showPlayerStats(killer);
+                }
             }
         }
 
@@ -563,6 +568,11 @@ public final class HopeCraft extends JavaPlugin {
             playerStats.compute(player.getUniqueId(), (uuid, stats) ->
                     stats == null ? new PlayerStats(0, 1, 0) : stats.addBlockBrokenStats());
             savePlayerStats(player.getUniqueId());
+            
+            // 实时更新计分板
+            if (player.getScoreboard().getObjective("stats") != null) {
+                showPlayerStats(player);
+            }
         }
 
         @EventHandler
@@ -571,6 +581,11 @@ public final class HopeCraft extends JavaPlugin {
             playerStats.compute(player.getUniqueId(), (uuid, stats) ->
                     stats == null ? new PlayerStats(0, 0, 1) : stats.addDeathStats());
             savePlayerStats(player.getUniqueId());
+            
+            // 实时更新计分板
+            if (player.getScoreboard().getObjective("stats") != null) {
+                showPlayerStats(player);
+            }
         }
     }
 
