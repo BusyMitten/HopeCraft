@@ -60,6 +60,7 @@ public final class HopeCraft extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new InventoryListener(), this);
         Bukkit.getPluginManager().registerEvents(new StatsListener(), this);
         Bukkit.getPluginManager().registerEvents(new KeyListener(), this);
+        Bukkit.getPluginManager().registerEvents(new PlayerListener(this), this);
 
         // 初始化数据库
         initDatabase();
