@@ -2,6 +2,7 @@ package org.hopestudio.hopeCraft;
 
 import org.bukkit.*;
 import org.bukkit.command.*;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -13,13 +14,18 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,6 +34,7 @@ public final class HopeCraft extends JavaPlugin {
     private Connection connection;
     private final Map<UUID, PlayerStats> playerStats = new ConcurrentHashMap<>();
     private File dataFolder;
+    private Birthday birthdayManager;
 
     // === ShiftAndF 功能整合 ===============================
     boolean shiftFEnabled = true;
@@ -47,14 +54,14 @@ public final class HopeCraft extends JavaPlugin {
         if (!dataFolder.exists()) dataFolder.mkdirs();
 
         // 安全注册命令
-        PluginCommand cmd = getCommand("hopecraft");
-        if (cmd == null) {
-            getLogger().severe("命令注册失败！请检查plugin.yml配置");
-            getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-        cmd.setExecutor(this);
-        cmd.setTabCompleter(this);
+        Objects.requireNonNull(getCommand("hopecraft")).setExecutor(this);
+        Objects.requireNonNull(getCommand("skull")).setExecutor(this);
+        Objects.requireNonNull(getCommand("birthday")).setExecutor(this);
+        
+        Objects.requireNonNull(getCommand("hopecraft")).setTabCompleter(this);
+
+        // 初始化生日管理器
+        birthdayManager = new Birthday(this);
 
         // 注册事件监听器
         Bukkit.getPluginManager().registerEvents(new InventoryListener(), this);
@@ -64,6 +71,17 @@ public final class HopeCraft extends JavaPlugin {
 
         // 初始化数据库
         initDatabase();
+        
+        // 加载生日祝福语配置
+        saveResource("birthday.yml", false);
+        loadBirthdayMessages();
+        
+        // 定时检查生日（每天0点检查一次）
+        scheduleBirthdayCheck();
+        
+        // 定时广播生日信息（每小时整点广播一次）
+        scheduleHourlyBirthdayBroadcast();
+        
         say("插件HopeCraft已启用！");
     }
 
@@ -107,10 +125,10 @@ public final class HopeCraft extends JavaPlugin {
         // 检查PAPI
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             hasPapi = true;
-            getLogger().info("§9检测到PlaceholderAPI，启用占位符功能");
+            getLogger().info("§a检测到PlaceholderAPI，启用占位符功能");
         } else {
             hasPapi = false;
-            getLogger().info("§9未检测到PlaceholderAPI，禁用占位符功能");
+            getLogger().info("§c未检测到PlaceholderAPI，禁用占位符功能");
         }
     }
 
@@ -124,6 +142,72 @@ public final class HopeCraft extends JavaPlugin {
             } else {
                 shiftFCommands.add(command);
             }
+        }
+    }
+
+    private void loadBirthdayMessages() {
+        // 从birthday.yml加载祝福语
+        File configFile = new File(getDataFolder(), "birthday.yml");
+        if (!configFile.exists()) {
+            saveResource("birthday.yml", false);
+            getLogger().info("生日配置文件不存在，已创建默认文件");
+        }
+        
+        try {
+            // 重新加载配置
+            reloadConfig();
+            
+            YamlConfiguration birthdayConfig = YamlConfiguration.loadConfiguration(configFile);
+            
+            // 检查配置文件是否包含messages字段
+            if (!birthdayConfig.contains("messages")) {
+                getLogger().warning("生日配置文件中缺少'messages'字段，使用默认配置");
+                
+                // 设置默认生日祝福语
+                List<String> defaultMessages = Arrays.asList(
+                    "生日快乐！祝你今天玩得开心！",
+                    "祝你生日快乐，游戏愉快！",
+                    "今天是你的生日，尽情享受吧！"
+                );
+                getConfig().set("birthday-messages", defaultMessages);
+                saveConfig();
+                return;
+            }
+            
+            List<String> messages = birthdayConfig.getStringList("messages");
+            
+            // 验证消息列表是否有效
+            if (messages == null || messages.isEmpty()) {
+                getLogger().warning("生日配置文件中的'messages'列表为空，使用默认配置");
+                
+                // 设置默认生日祝福语
+                List<String> defaultMessages = Arrays.asList(
+                    "生日快乐！祝你今天玩得开心！",
+                    "祝你生日快乐，游戏愉快！",
+                    "今天是你的生日，尽情享受吧！"
+                );
+                getConfig().set("birthday-messages", defaultMessages);
+                saveConfig();
+                return;
+            }
+            
+            // 将消息添加到主配置中
+            getConfig().set("birthday-messages", messages);
+            saveConfig();
+            
+            getLogger().info("成功加载 " + messages.size() + " 条生日祝福语");
+        } catch (Exception e) {
+            getLogger().severe("加载生日祝福语时发生错误: " + e.getMessage());
+            e.printStackTrace();
+            
+            // 出现错误时设置默认生日祝福语
+            List<String> defaultMessages = Arrays.asList(
+                "生日快乐！祝你今天玩得开心！",
+                "祝你生日快乐，游戏愉快！",
+                "今天是你的生日，尽情享受吧！"
+            );
+            getConfig().set("birthday-messages", defaultMessages);
+            saveConfig();
         }
     }
 
@@ -187,6 +271,11 @@ public final class HopeCraft extends JavaPlugin {
                         "kills INTEGER DEFAULT 0, " +
                         "blocks_broken INTEGER DEFAULT 0, " +
                         "deaths INTEGER DEFAULT 0)");
+                
+                // 创建生日表
+                stmt.execute("CREATE TABLE IF NOT EXISTS player_birthdays (" +
+                        "player_uuid TEXT PRIMARY KEY, " +
+                        "birthday TEXT NOT NULL)");
             }
             
             getLogger().info("数据库连接成功: " + dbFile.getAbsolutePath());
@@ -213,6 +302,82 @@ public final class HopeCraft extends JavaPlugin {
             getLogger().severe("数据库连接检查失败: " + e.getMessage());
             initDatabase();
         }
+    }
+
+    // ========== 生日系统 ==========
+    public boolean hasBirthday(UUID uuid) throws SQLException {
+        ensureConnection();
+        try (PreparedStatement ps = connection.prepareStatement(
+                "SELECT birthday FROM player_birthdays WHERE player_uuid = ?")) {
+            ps.setString(1, uuid.toString());
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+        }
+    }
+
+    public LocalDate getPlayerBirthday(UUID uuid) {
+        try {
+            ensureConnection();
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "SELECT birthday FROM player_birthdays WHERE player_uuid = ?")) {
+                ps.setString(1, uuid.toString());
+                ResultSet rs = ps.executeQuery();
+                if (rs.next()) {
+                    return LocalDate.parse(rs.getString("birthday"));
+                }
+            }
+        } catch (Exception e) {
+            getLogger().severe("获取玩家生日失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public void setPlayerBirthday(UUID uuid, LocalDate birthday) throws SQLException {
+        ensureConnection();
+        try (PreparedStatement ps = connection.prepareStatement(
+                "INSERT OR REPLACE INTO player_birthdays (player_uuid, birthday) VALUES (?, ?)")) {
+            ps.setString(1, uuid.toString());
+            ps.setString(2, birthday.format(DateTimeFormatter.ISO_DATE));
+            ps.executeUpdate();
+        }
+    }
+
+    private void scheduleBirthdayCheck() {
+        // 每天检查一次生日
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime nextRun = now.withHour(0).withMinute(0).withSecond(0);
+        if (now.compareTo(nextRun) > 0) {
+            nextRun = nextRun.plusDays(1);
+        }
+
+        long delay = java.time.Duration.between(now, nextRun).getSeconds();
+        
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                birthdayManager.checkBirthdays();
+            }
+        }.runTaskTimer(this, delay * 20, 24 * 60 * 60 * 20); // 20 ticks per second
+        
+        getLogger().info("生日检查任务已安排，将在每天0点执行");
+    }
+    
+    private void scheduleHourlyBirthdayBroadcast() {
+        // 每小时整点广播一次生日信息
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime nextRun = now.withMinute(0).withSecond(0).withNano(0).plusHours(1);
+        
+        long delay = java.time.Duration.between(now, nextRun).getSeconds();
+        
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                birthdayManager.checkBirthdays();
+            }
+        }.runTaskTimer(this, delay * 20, 60 * 60 * 20); // 每小时执行一次
+        
+        getLogger().info("生日整点广播任务已安排，将在每小时整点执行");
     }
 
     // ========== 签到系统 ==========
@@ -483,6 +648,71 @@ public final class HopeCraft extends JavaPlugin {
             }
             return true;
         }
+        else if (cmd.getName().equalsIgnoreCase("birthday")) {
+            if (args.length < 1) {
+                sender.sendMessage(ChatColor.RED + "用法: /birthday <set|confirm|broadcast> [月份] [日期]");
+                return true;
+            }
+
+            if (args[0].equalsIgnoreCase("set")) {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(ChatColor.RED + "只有玩家可以设置生日！");
+                    return true;
+                }
+                
+                if (args.length < 3) {
+                    player.sendMessage(ChatColor.RED + "用法: /birthday set <月份> <日期>");
+                    return true;
+                }
+
+                try {
+                    int month = Integer.parseInt(args[1]);
+                    int day = Integer.parseInt(args[2]);
+                    
+                    if (month < 1 || month > 12) {
+                        player.sendMessage(ChatColor.RED + "月份必须在1-12之间");
+                        return true;
+                    }
+                    
+                    if (day < 1 || day > 31) {
+                        player.sendMessage(ChatColor.RED + "日期必须在1-31之间");
+                        return true;
+                    }
+                    
+                    // 验证日期是否有效
+                    try {
+                        LocalDate.of(2024, month, day); // 使用2024年验证日期有效性
+                    } catch (DateTimeParseException e) {
+                        player.sendMessage(ChatColor.RED + "输入的日期无效，请检查月份和日期");
+                        return true;
+                    }
+                    
+                    birthdayManager.setPendingBirthday(player, month, day);
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "请输入有效的数字");
+                    return true;
+                }
+            } else if (args[0].equalsIgnoreCase("confirm")) {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(ChatColor.RED + "只有玩家可以确认生日设置！");
+                    return true;
+                }
+                
+                birthdayManager.confirmBirthday(player);
+            } else if (args[0].equalsIgnoreCase("broadcast")) {
+                if (!sender.hasPermission("hopecraft.admin")) {
+                    sender.sendMessage(ChatColor.RED + "你没有权限使用此命令！");
+                    return true;
+                }
+                
+                sender.sendMessage(ChatColor.GREEN + "正在广播生日信息...");
+                birthdayManager.broadcastBirthdayMessage();
+            } else {
+                sender.sendMessage(ChatColor.RED + "用法: /birthday <set|confirm|broadcast> [月份] [日期]");
+            }
+            
+            return true;
+        }
         return false;
     }
 
@@ -500,6 +730,16 @@ public final class HopeCraft extends JavaPlugin {
                 completions.add("on");
                 completions.add("off");
                 completions.add("reload");
+            }
+        } else if (command.getName().equalsIgnoreCase("birthday")) {
+            if (args.length == 1) {
+                completions.add("set");
+                completions.add("confirm");
+                
+                // 只有具有管理员权限的用户才能使用broadcast命令
+                if (sender.hasPermission("hopecraft.admin")) {
+                    completions.add("broadcast");
+                }
             }
         }
         

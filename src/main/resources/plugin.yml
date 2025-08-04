@@ -1,6 +1,6 @@
 name: HopeCraft
 main: org.hopestudio.hopeCraft.HopeCraft
-version: 1.6.4
+version: 1.6.7
 api-version: "1.21"
 commands:
   hopecraft:
@@ -9,7 +9,10 @@ commands:
   skull:
     description: 获取玩家头颅
     usage: /skull [玩家名]
+  birthday:
+    description: 生日相关命令
+    usage: /birthday <set|confirm|broadcast>
 permissions:
   hopecraft.admin:
-    description: HopeCraft管理员权限，可以控制是否监听Shift+F按键
+    description: HopeCraft管理员权限
     default: op

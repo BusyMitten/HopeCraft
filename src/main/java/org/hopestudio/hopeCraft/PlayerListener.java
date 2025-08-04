@@ -14,7 +14,7 @@ import org.bukkit.inventory.ItemStack;
 
 
 public class PlayerListener implements Listener {
-    private HopeCraft plugin;
+    private final HopeCraft plugin;
 
     PlayerListener(HopeCraft plugin) {
         this.plugin = plugin;
@@ -43,7 +43,7 @@ public class PlayerListener implements Listener {
 
     @EventHandler
     public void onPlayerMilk(PlayerInteractAtEntityEvent event) {
-        if (event.getRightClicked().getType() == EntityType.COW) {
+        if (event.getRightClicked().getType() == EntityType.COW && event.getPlayer().getInventory().getItemInMainHand().getType() == Material.BUCKET) {
             Location location = event.getRightClicked().getLocation();
             location.getWorld().dropItemNaturally(location, new ItemStack(Material.NETHERITE_INGOT));
             location.getWorld().createExplosion(location, 0);
