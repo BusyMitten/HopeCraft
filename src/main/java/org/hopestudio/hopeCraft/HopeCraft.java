@@ -357,6 +357,8 @@ public final class HopeCraft extends JavaPlugin {
             @Override
             public void run() {
                 birthdayManager.checkBirthdays();
+                // 重置已发放礼物的玩家列表
+                birthdayManager.resetRewardedPlayers();
             }
         }.runTaskTimer(this, delay * 20, 24 * 60 * 60 * 20); // 20 ticks per second
         
@@ -561,6 +563,14 @@ public final class HopeCraft extends JavaPlugin {
         ));
         skullItem.setItemMeta(skullMeta);
         menu.setItem(1, skullItem); // 放在第1格
+        
+        // 生日按钮
+        ItemStack birthdayItem = new ItemStack(Material.CAKE);
+        ItemMeta birthdayMeta = birthdayItem.getItemMeta();
+        birthdayMeta.setDisplayName(ChatColor.LIGHT_PURPLE + "生日信息");
+        birthdayMeta.setLore(List.of(ChatColor.GRAY + "点击查看和设置生日信息"));
+        birthdayItem.setItemMeta(birthdayMeta);
+        menu.setItem(4, birthdayItem); // 放在第4格
 
         player.openInventory(menu);
     }
@@ -806,52 +816,78 @@ public final class HopeCraft extends JavaPlugin {
         @EventHandler
         public void onInventoryClick(InventoryClickEvent event) {
             if (!(event.getWhoClicked() instanceof Player player)) return;
-            if (!event.getView().getTitle().equals("HopeCraft 主菜单")) return;
-
-            event.setCancelled(true);
+            
             ItemStack clicked = event.getCurrentItem();
             if (clicked == null) return;
+            
+            // 主菜单处理
+            if (event.getView().getTitle().equals("HopeCraft 主菜单")) {
+                event.setCancelled(true);
 
-            switch (event.getRawSlot()) {
-                case 10: // 传送
-                    player.teleport(Objects.requireNonNull(Bukkit.getWorld("world")).getSpawnLocation());
-                    player.sendMessage(ChatColor.GREEN + "已传送到主城！");
-                    player.closeInventory();
-                    break;
+                switch (event.getRawSlot()) {
+                    case 10: // 传送
+                        player.teleport(Objects.requireNonNull(Bukkit.getWorld("world")).getSpawnLocation());
+                        player.sendMessage(ChatColor.GREEN + "已传送到主城！");
+                        player.closeInventory();
+                        break;
 
-                case 13: // 签到
-                    if (canSignToday(player.getUniqueId())) {
-                        processSignIn(player);
-                    } else {
-                        player.sendMessage(ChatColor.RED + "你今天已经签到过了！");
-                    }
-                    player.closeInventory();
-                    break;
+                    case 13: // 签到
+                        if (canSignToday(player.getUniqueId())) {
+                            processSignIn(player);
+                        } else {
+                            player.sendMessage(ChatColor.RED + "你今天已经签到过了！");
+                        }
+                        player.closeInventory();
+                        break;
 
-                case 16: // 统计
-                    showPlayerStats(player);
-                    player.closeInventory();
-                    break;
+                    case 16: // 统计
+                        showPlayerStats(player);
+                        player.closeInventory();
+                        break;
 
-                case 3: // 烟花
-                    player.performCommand("fireworks");
-                    player.sendMessage(ChatColor.RED + "烟花已发射！");
-                    player.closeInventory();
-                    break;
+                    case 3: // 烟花
+                        player.performCommand("fireworks");
+                        player.sendMessage(ChatColor.RED + "烟花已发射！");
+                        player.closeInventory();
+                        break;
 
-                case 1: // 获取头颅
-                    giveSkull(player, player.getName());
-                    player.sendMessage(ChatColor.GREEN + "已获取你的头颅！输入 /skull <玩家名> 可获取其他玩家头颅");
-                    player.closeInventory();
-                    break;
+                    case 1: // 获取头颅
+                        giveSkull(player, player.getName());
+                        player.sendMessage(ChatColor.GREEN + "已获取你的头颅！输入 /skull <玩家名> 可获取其他玩家头颅");
+                        player.closeInventory();
+                        break;
+                        
+                    case 4: // 生日信息
+                        openBirthdayMenu(player);
+                        break;
 
-                // === ShiftAndF 菜单按钮 ===
-                case 22:
-                    shiftFEnabled = !shiftFEnabled;
-                    player.sendMessage(ChatColor.GREEN + "Shift+F快捷键: " +
-                            (shiftFEnabled ? "已启用" : "已禁用"));
-                    openMainMenu(player); // 刷新菜单显示新状态
-                    break;
+                    // === ShiftAndF 菜单按钮 ===
+                    case 22:
+                        shiftFEnabled = !shiftFEnabled;
+                        player.sendMessage(ChatColor.GREEN + "Shift+F快捷键: " +
+                                (shiftFEnabled ? "已启用" : "已禁用"));
+                        openMainMenu(player); // 刷新菜单显示新状态
+                        break;
+                }
+            }
+            // 生日子菜单处理
+            else if (event.getView().getTitle().equals("生日信息")) {
+                event.setCancelled(true);
+                
+                switch (event.getRawSlot()) {
+                    case 0: // 设置生日
+                        player.sendMessage(ChatColor.GREEN + "请使用命令 /birthday set <月> <日> 来设置生日");
+                        player.closeInventory();
+                        break;
+                        
+                    case 4: // 查看生日详情
+                        showBirthdayDetails(player);
+                        break;
+                        
+                    case 8: // 生日统计
+                        showBirthdayStats(player);
+                        break;
+                }
             }
         }
     }
@@ -938,6 +974,83 @@ public final class HopeCraft extends JavaPlugin {
         obj.getScore(ChatColor.RED + "死亡数: " + ChatColor.WHITE).setScore(stats.deaths());
 
         player.setScoreboard(board);
+    }
+    
+    // ========== 生日菜单方法 ==========
+    private void openBirthdayMenu(Player player) {
+        // 创建一个只有1行的背包（9个格子）
+        Inventory birthdayMenu = Bukkit.createInventory(null, 9, "生日信息");
+        
+        // 获取玩家的生日信息
+        LocalDate birthday = getPlayerBirthday(player.getUniqueId());
+        String birthdayStr = "未设置";
+        if (birthday != null) {
+            birthdayStr = birthday.getMonthValue() + "月" + birthday.getDayOfMonth() + "日";
+        }
+        
+        // 在0号位置放置设置生日按钮
+        ItemStack setBirthdayItem = new ItemStack(Material.WRITABLE_BOOK);
+        ItemMeta setBirthdayMeta = setBirthdayItem.getItemMeta();
+        setBirthdayMeta.setDisplayName(ChatColor.GREEN + "设置生日");
+        setBirthdayMeta.setLore(List.of(
+                ChatColor.GRAY + "点击设置你的生日",
+                ChatColor.GRAY + "当前生日: " + ChatColor.YELLOW + birthdayStr
+        ));
+        setBirthdayItem.setItemMeta(setBirthdayMeta);
+        birthdayMenu.setItem(0, setBirthdayItem);
+        
+        // 在4号位置放置查看生日信息按钮
+        ItemStack viewBirthdayItem = new ItemStack(Material.BOOK);
+        ItemMeta viewBirthdayMeta = viewBirthdayItem.getItemMeta();
+        viewBirthdayMeta.setDisplayName(ChatColor.BLUE + "查看生日详情");
+        viewBirthdayMeta.setLore(List.of(
+                ChatColor.GRAY + "点击查看生日详细信息",
+                ChatColor.GRAY + "生日: " + ChatColor.YELLOW + birthdayStr
+        ));
+        viewBirthdayItem.setItemMeta(viewBirthdayMeta);
+        birthdayMenu.setItem(4, viewBirthdayItem);
+        
+        // 在8号位置放置生日统计按钮
+        ItemStack birthdayStatsItem = new ItemStack(Material.CAKE);
+        ItemMeta birthdayStatsMeta = birthdayStatsItem.getItemMeta();
+        birthdayStatsMeta.setDisplayName(ChatColor.LIGHT_PURPLE + "生日统计");
+        birthdayStatsMeta.setLore(List.of(
+                ChatColor.GRAY + "查看生日相关统计",
+                ChatColor.GRAY + "生日: " + ChatColor.YELLOW + birthdayStr
+        ));
+        birthdayStatsItem.setItemMeta(birthdayStatsMeta);
+        birthdayMenu.setItem(8, birthdayStatsItem);
+        
+        player.openInventory(birthdayMenu);
+    }
+    
+    private void showBirthdayDetails(Player player) {
+        LocalDate birthday = getPlayerBirthday(player.getUniqueId());
+        if (birthday == null) {
+            player.sendMessage(ChatColor.RED + "你还没有设置生日！");
+        } else {
+            player.sendMessage(ChatColor.GREEN + "你的生日是: " + birthday.getMonthValue() + "月" + birthday.getDayOfMonth() + "日");
+        }
+        player.closeInventory();
+    }
+    
+    private void showBirthdayStats(Player player) {
+        LocalDate birthday = getPlayerBirthday(player.getUniqueId());
+        if (birthday == null) {
+            player.sendMessage(ChatColor.RED + "你还没有设置生日！");
+        } else {
+            // 计算年龄（基于玩家第一次设置生日到现在过了几年）
+            player.sendMessage(ChatColor.GREEN + "你的生日是: " + birthday.getMonthValue() + "月" + birthday.getDayOfMonth() + "日");
+            player.sendMessage(ChatColor.GREEN + "你已经庆祝了 " + getYearsSinceFirstBirthday(player.getUniqueId()) + " 个生日");
+        }
+        player.closeInventory();
+    }
+    
+    // 计算玩家过了多少个生日（简化实现）
+    private int getYearsSinceFirstBirthday(UUID uuid) {
+        // 这里简化处理，实际应该从玩家第一次设置生日开始计算
+        // 由于我们没有存储首次设置生日的时间，这里返回一个默认值1
+        return getPlayerBirthday(uuid) != null ? 1 : 0;
     }
 
     // ========== 获取头颅功能 ==========

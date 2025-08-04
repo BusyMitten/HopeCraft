@@ -11,14 +11,17 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 public class Birthday {
     private final HopeCraft plugin;
     private final Map<UUID, LocalDate> pendingBirthdays = new HashMap<>();
+    private final Set<UUID> rewardedPlayers = new HashSet<>(); // 记录已发放礼物的玩家
     private final Random random = new Random();
 
     public Birthday(HopeCraft plugin) {
@@ -61,12 +64,15 @@ public class Birthday {
             
             if (todayStr.equals(birthdayStr)) {
                 // 今天就是生日，立即庆祝
-                celebrateBirthday(player, birthday);
-                
-                // 广播生日消息
-                List<String> birthdayPlayers = new ArrayList<>();
-                birthdayPlayers.add(player.getName());
-                broadcastBirthdayMessage(birthdayPlayers);
+                if (!rewardedPlayers.contains(uuid)) {
+                    celebrateBirthday(player, birthday);
+                    rewardedPlayers.add(uuid);
+                    
+                    // 广播生日消息
+                    List<String> birthdayPlayers = new ArrayList<>();
+                    birthdayPlayers.add(player.getName());
+                    broadcastBirthdayMessage(birthdayPlayers);
+                }
             }
             
             return true;
@@ -85,19 +91,27 @@ public class Birthday {
             List<String> birthdayPlayers = new ArrayList<>();
             
             for (Player player : plugin.getServer().getOnlinePlayers()) {
-                LocalDate playerBirthday = plugin.getPlayerBirthday(player.getUniqueId());
+                UUID uuid = player.getUniqueId();
+                LocalDate playerBirthday = plugin.getPlayerBirthday(uuid);
                 if (playerBirthday != null) {
                     String birthdayStr = playerBirthday.format(DateTimeFormatter.ofPattern("MM-dd"));
                     if (todayStr.equals(birthdayStr)) {
                         // 今天是玩家的生日
                         birthdayPlayers.add(player.getName());
-                        celebrateBirthday(player, playerBirthday);
+                        
+                        // 检查是否已经发放过礼物
+                        if (!rewardedPlayers.contains(uuid)) {
+                            celebrateBirthday(player, playerBirthday);
+                            rewardedPlayers.add(uuid);
+                        }
                     }
                 }
             }
             
             // 如果有玩家过生日，则进行整点广播
-            broadcastBirthdayMessage(birthdayPlayers);
+            if (!birthdayPlayers.isEmpty()) {
+                broadcastBirthdayMessage(birthdayPlayers);
+            }
         } catch (Exception e) {
             plugin.getLogger().severe("检查生日时出现错误: " + e.getMessage());
             e.printStackTrace();
@@ -123,11 +137,18 @@ public class Birthday {
             List<String> birthdayPlayers = new ArrayList<>();
             
             for (Player player : plugin.getServer().getOnlinePlayers()) {
-                LocalDate playerBirthday = plugin.getPlayerBirthday(player.getUniqueId());
+                UUID uuid = player.getUniqueId();
+                LocalDate playerBirthday = plugin.getPlayerBirthday(uuid);
                 if (playerBirthday != null) {
                     String birthdayStr = playerBirthday.format(DateTimeFormatter.ofPattern("MM-dd"));
                     if (todayStr.equals(birthdayStr)) {
                         birthdayPlayers.add(player.getName());
+                        
+                        // 检查是否已经发放过礼物
+                        if (!rewardedPlayers.contains(uuid)) {
+                            celebrateBirthday(player, playerBirthday);
+                            rewardedPlayers.add(uuid);
+                        }
                     }
                 }
             }
@@ -141,6 +162,12 @@ public class Birthday {
             plugin.getLogger().severe("强制广播生日信息时出现错误: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+    
+    // 每日重置已发放礼物的玩家列表
+    public void resetRewardedPlayers() {
+        rewardedPlayers.clear();
+        plugin.getLogger().info("已重置生日礼物发放记录");
     }
 
     private void celebrateBirthday(Player player, LocalDate birthday) {
