@@ -1,21 +1,30 @@
-# HopeCraft插件（适用于Bukkit核心）
-作者：BusyMitten & NanoTurtle1145
-用maven构建，使用IDEA编辑
-# 构建说明
-如果您想下载源代码并进行构建，随你便。但是我们有一点要求:
+# HopeCraft - Bukkit 服务器插件
 
-1 必须开源（尽管我们没有此类许可证，但是还是按道德行事）。
+[](https://github.com/BusyMitten/HopeCraft)
+[](https://www.minecraft.net)
+[](https://adoptium.net)
 
-2 未完待续
+适用于 Bukkit 核心的轻量级功能增强插件，提供服务器菜单等实用功能。
 
-## 如何构建？
-你需要有一个编译环境（推荐idea），以下是一些信息
-| 属性           | 值                |
-|----------------|-------------------|
-| **核心**       | bukkit            |
-| **编译版本**   | jdk24             |
-| **服务器核心** | 1.21+             |
-| **编译器**    | Maven             |
-| **boo**||
+## ✨ 核心功能
+- 自定义服务器菜单系统
+- 玩家实用工具集合
+- 管理员管理工具
+- 高性能低资源占用
+- 兼容最新 Bukkit API
 
-然后按照IDE的指示编译即可（你都找到这来了，难道不会编译吗）
+## ⚙️ 环境要求
+| 组件              | 最低要求           |
+|-------------------|-------------------|
+| Java              | JDK 17+           |
+| Minecraft 服务端  | Bukkit 1.21+      |
+| 构建工具          | Maven 3.6+        |
+
+## 🛠️ 构建指南
+
+### 前置条件
+1. 安装 [JDK 17+](https://adoptium.net/)
+2. 安装 [Maven](https://maven.apache.org/)
+3. 推荐使用 [IntelliJ IDEA](https://www.jetbrains.com/idea/)
+
+### 构建步骤
