@@ -1,4 +1,4 @@
-9# HopeCraft - Bukkit 服务器插件
+# HopeCraft - Bukkit 服务器插件
 
 [](https://github.com/BusyMitten/HopeCraft)
 [](https://www.minecraft.net)
@@ -91,3 +91,9 @@ HopeCraft/
 
 **维护团队**: BusyMitten & NanoTurtle1145  
 **最后更新**: 2025年8月6日
+⑨ ⑨ ⑨
+⑨ 😱⑨
+⑨ ⑨ ⑨
+
+(手动⑨)
+你说得对，但是van♂易云硬♂乐是一款由van♂易开发的硬♂乐产品，依托专业♂硬乐人、 D♂J、好♂友推荐及社♂蕉功能，在♂线音乐服♂务主打歌♂单、社♂蕉、dark♂牌推荐和音乐指♂ 纹，以歌单、D♂J节♂目、社♂交、地♂理位置为核♂心要素，主打fa♂现和分♂享。
