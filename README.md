@@ -106,4 +106,5 @@ HopeCraft/
 HopeCraft is licensed under **Mozilla Public License 2.0 (MPL-2.0)**.  
 - Modifications must be open-sourced under MPL-2.0.  
 - Commercial use is permitted, but modified versions cannot be relicensed.
+
 (就是屎上添花)
