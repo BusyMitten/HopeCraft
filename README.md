@@ -1,4 +1,4 @@
-# HopeCraft - Bukkit 服务器插件
+9# HopeCraft - Bukkit 服务器插件
 
 [](https://github.com/BusyMitten/HopeCraft)
 [](https://www.minecraft.net)
@@ -85,7 +85,7 @@ HopeCraft/
 ## 📞 技术支持
 如需协助，请通过以下方式联系：
 - GitHub Issues: https://github.com/BusyMitten/HopeCraft/issues
-- 项目讨论区: ![Hope Studio官方博客](https://nanoturtle1145.github.io)
+- 项目讨论区: https://nanoturtle1145.github.io
 
 ---
 
