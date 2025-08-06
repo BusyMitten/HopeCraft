@@ -174,16 +174,24 @@ public class Birthday {
         // 给玩家发送礼物：蛋糕和纪念币
         ItemStack cake = new ItemStack(Material.CAKE);
         
-        // 创建纪念币
-        ItemStack coin = new ItemStack(Material.SUNFLOWER); // 使用向日葵作为纪念币
+        // 创建纪念币（使用向日葵作为基础材料）
+        ItemStack coin = new ItemStack(Material.SUNFLOWER); // 使用向日葵作为基础材料
         ItemMeta coinMeta = coin.getItemMeta();
         if (coinMeta != null) {
             coinMeta.setDisplayName(ChatColor.GOLD + "" + ChatColor.BOLD + "HopeCraft纪念币");
+            
+            // 添加特殊附魔效果使其看起来更独特（仅用于视觉效果，无实际作用）
+            coinMeta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 1, true);
+            
+            // 添加自定义模型数据（如果客户端有对应的资源包）
+            coinMeta.setCustomModelData(10001);
             
             List<String> lore = new ArrayList<>();
             lore.add(ChatColor.YELLOW + "玩家: " + ChatColor.WHITE + player.getName());
             lore.add(ChatColor.YELLOW + "生日: " + ChatColor.WHITE + birthday.getMonthValue() + "月" + birthday.getDayOfMonth() + "日");
             lore.add("");
+            lore.add(ChatColor.DARK_GRAY + "生日纪念品");
+            lore.add(ChatColor.DARK_GRAY + "来自HopeCraft");
             
             // 从配置文件中获取随机祝福语
             List<String> messages = plugin.getConfig().getStringList("birthday-messages");
