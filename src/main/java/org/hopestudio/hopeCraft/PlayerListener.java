@@ -30,7 +30,7 @@ public class PlayerListener implements Listener {
         // 设置加入消息为null，取消默认消息
         event.joinMessage(null);
         // 向全服玩家发送自定义消息
-        plugin.getServer().broadcastMessage(ChatColor.LIGHT_PURPLE + event.getPlayer().getName() + ChatColor.GREEN + "来了！");
+        plugin.getServer().broadcastMessage(ChatColor.LIGHT_PURPLE + event.getPlayer().getName() + ChatColor.GREEN + "上了！");
     }
 
     @EventHandler
@@ -38,7 +38,7 @@ public class PlayerListener implements Listener {
         // 设置退出消息为null，取消默认消息
         event.quitMessage(null);
         // 向全服玩家发送自定义消息
-        plugin.getServer().broadcastMessage(ChatColor.LIGHT_PURPLE + event.getPlayer().getName() + ChatColor.GREEN + "去吃饭了。");
+        plugin.getServer().broadcastMessage(ChatColor.LIGHT_PURPLE + event.getPlayer().getName() + ChatColor.GREEN + "下惹。");
     }
 
     @EventHandler

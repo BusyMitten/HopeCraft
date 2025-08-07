@@ -1,5 +1,5 @@
+//人家TCC和ICT能做到的我们也能做到！
 package org.hopestudio.hopeCraft;
-
 import org.bukkit.*;
 import org.bukkit.command.*;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -17,7 +17,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.*;
 import org.jetbrains.annotations.NotNull;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +27,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
 
 public final class HopeCraft extends JavaPlugin {
 
@@ -83,6 +83,8 @@ public final class HopeCraft extends JavaPlugin {
         scheduleHourlyBirthdayBroadcast();
         
         say("插件HopeCraft已启用！");
+        //motdmanager
+        motdManager = new MOTDManager(this);
     }
 
     @Override
@@ -572,7 +574,19 @@ public final class HopeCraft extends JavaPlugin {
         birthdayItem.setItemMeta(birthdayMeta);
         menu.setItem(4, birthdayItem); // 放在第4格
 
-        player.openInventory(menu);
+        // 添加MOTD按钮 (位置33)
+        ItemStack motdItem = new ItemStack(Material.OAK_SIGN);
+        ItemMeta motdMeta = motdItem.getItemMeta();
+        motdMeta.setDisplayName(ChatColor.BLUE + "修改服务器MOTD");
+        motdMeta.setLore(Arrays.asList(
+                ChatColor.GRAY + "当前MOTD:",
+                ChatColor.WHITE + motdManager.getMotd(),
+                ChatColor.YELLOW + "点击查看/修改"
+        ));
+        motdItem.setItemMeta(motdMeta);
+        menu.setItem(33, motdItem);
+
+        player.openInventory(menu);//后面别加东西
     }
 
     private @NotNull ItemStack getItemStack() {
@@ -599,7 +613,10 @@ public final class HopeCraft extends JavaPlugin {
                 sender.sendMessage(ChatColor.RED + "只有玩家可以使用此命令！");
                 return true;
             }
-
+            if (!sender.hasPermission("hopecraft.admin")) {  // 直接使用yml中的节点名
+                sender.sendMessage(ChatColor.RED + "权限不足！");
+                return true;
+            }
             // 处理子命令
             if (args.length > 0) {
                 // === ShiftAndF 子命令 ===
@@ -723,7 +740,27 @@ public final class HopeCraft extends JavaPlugin {
             
             return true;
         }
-        return false;
+        // 添加MOTD命令
+        if (cmd.getName().equalsIgnoreCase("motd")) {
+            if (!sender.hasPermission("hopecraft.admin")) {
+                sender.sendMessage(ChatColor.RED + "你没有权限修改MOTD！");
+                return true;
+            }
+
+            if (args.length == 0) {
+                sender.sendMessage(ChatColor.GOLD + "当前MOTD: " + ChatColor.RESET + motdManager.getMotd());
+                sender.sendMessage(ChatColor.YELLOW + "使用 /motd <新内容> 修改");
+                return true;
+            }
+
+            String newMotd = String.join(" ", args);
+            motdManager.setMotd(newMotd);
+            sender.sendMessage(ChatColor.GREEN + "MOTD已更新为: " + ChatColor.RESET + newMotd);
+            return true;
+        }
+
+
+        return false;//这个在最后一行，不要想着在这行后面加别的条件判断或者其他语句
     }
 
     @Override
@@ -816,7 +853,14 @@ public final class HopeCraft extends JavaPlugin {
         @EventHandler
         public void onInventoryClick(InventoryClickEvent event) {
             if (!(event.getWhoClicked() instanceof Player player)) return;
-            
+            // MOTD按钮处理
+            if (event.getView().getTitle().equals("HopeCraft 主菜单") && event.getRawSlot() == 33) {
+                event.setCancelled(true);
+
+                Player p = (Player) event.getWhoClicked(); // 使用新变量名
+                p.performCommand("motd");
+                p.closeInventory();
+            }
             ItemStack clicked = event.getCurrentItem();
             if (clicked == null) return;
             
@@ -889,6 +933,7 @@ public final class HopeCraft extends JavaPlugin {
                         break;
                 }
             }
+
         }
     }
 
@@ -1091,7 +1136,63 @@ public final class HopeCraft extends JavaPlugin {
         }
     }
     //debug
+    //自定义MOTD（MOTDManager）
+    private MOTDManager motdManager;
 
 
 }
 //神必彩蛋
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//银梦梗你赢了
+
+
+
+

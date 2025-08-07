@@ -1,8 +1,8 @@
 # HopeCraft - Bukkit 服务器插件
 
-[](https://github.com/BusyMitten/HopeCraft)
-[](https://www.minecraft.net)
-[](https://adoptium.net)
+[1](https://github.com/BusyMitten/HopeCraft)
+[2](https://www.minecraft.net)
+[3](https://adoptium.net)
 
 适用于 Bukkit 核心的轻量级功能增强插件，提供服务器菜单等实用功能。
 
@@ -14,11 +14,11 @@
 - 兼容最新 Bukkit API
 
 ## ⚙️ 环境要求
-| 组件              | 最低要求           |
-|-------------------|-------------------|
-| Java              | JDK 17+           |
-| Minecraft 服务端  | Bukkit 1.21+      |
-| 构建工具          | Maven 3.6+        |
+| 组件            | 最低要求         |
+|---------------|--------------|
+| Java          | JDK 17+      |
+| Minecraft 服务端 | Bukkit 1.21+ |
+| 构建工具          | Maven 3.6+   |
 
 ## 🛠️ 构建指南
 
@@ -27,7 +27,7 @@
 2. 安装 [Maven](https://maven.apache.org/)
 3. 推荐使用 [IntelliJ IDEA](https://www.jetbrains.com/idea/)
 
-### 构建步骤
+### 构建步骤（建议使用：Bash）
 ``` bash
 
 
