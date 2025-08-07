@@ -1,98 +1,69 @@
-# HopeCraft - Bukkit 服务器插件
+# HopeCraft - Bukkit 高可用功能增强插件
+[![GitHub](https://img.shields.io/badge/GitHub-源码-blue?logo=github)](https://github.com/BusyMitten/HopeCraft)  
+[![License](https://img.shields.io/badge/License-MPL--2.0-orange)](https://www.mozilla.org/en-US/MPL/2.0/)
 
-[1](https://github.com/BusyMitten/HopeCraft)
-[2](https://www.minecraft.net)
-[3](https://adoptium.net)
+专为 **Bukkit 1.21+** 设计的轻量级工具集，提供声明式菜单系统与核心增强功能，性能开销逼近零。
 
-适用于 Bukkit 核心的轻量级功能增强插件，提供服务器菜单等实用功能。
+## 🚀 核心价值
+- **声明式菜单引擎** - 通过YAML配置自定义GUI菜单，无需重载
+- **超轻量内核** - 基于Bukkit事件驱动模型，常驻内存 < 5MB
 
-## 核心功能
-- 自定义服务器菜单系统
-- 玩家实用工具集合
-- 管理员管理工具
-- 高性能低资源占用
-- 兼容 Bukkit API
+## ⚙️ 硬性要求
+| 组件            | 最低版本       | 推荐链接                     |  
+|----------------|--------------|----------------------------|  
+| **Java**       | JDK 17       | [Adoptium](https://adoptium.net/) |  
+| **服务端核心**   | Bukkit 1.21+ | [PaperMC](https://papermc.io/) |  
+| **构建工具**     | Maven 3.9+   | [Maven](https://maven.apache.org/) |  
 
-## 环境要求
-| 组件            | 最低要求         |
-|---------------|--------------|
-| Java          | JDK 17+      |
-| Minecraft 服务端 | Bukkit 1.21+ |
-| 构建工具          | Maven 3.6+   |
+## 🛠️ 构建指南（Linux/macOS）
+```
+bash
 
-## 构建指南
-
-### 前置条件
-1. 安装 [JDK 17+](https://adoptium.net/)
-2. 安装 [Maven](https://maven.apache.org/)
-3. 推荐使用 [IntelliJ IDEA](https://www.jetbrains.com/idea/)
-
-### 构建步骤（建议使用：Bash）
-``` bash
-
-
-克隆仓库
-
-git clone https://github.com/BusyMitten/HopeCraft.git 
+git clone https://github.com/BusyMitten/HopeCraft.git
 
 cd HopeCraft
 
-编译项目
-
-mvn clean package
-
-输出文件
-
-ls target/HopeCraft-*.jar
+mvn clean package -DskipTests # 产出位于 target/
 ```
+> **开发建议**：使用 [IntelliJ IDEA](https://www.jetbrains.com/idea/) 导入 Maven 项目
 
+## 📦 安装流程
+1. 将 `target/HopeCraft-*.jar` 置于服务端 `plugins/`
+2. **重启服务端**（首次加载必需）
+3. 按需编辑生成的 `plugins/HopeCraft/config.yml`
 
-### 安装使用
-1. 将编译生成的 `.jar` 文件放入服务器 `plugins/` 目录
-2. 重启服务器
-3. 插件自动生成配置文件 `plugins/HopeCraft/config.yml`
+## ⚖️ 开源协议
+**MPL-2.0** 强制约束：
+1. 所有衍生代码必须开源
+2. 修改文件头部保留原始版权声明
+3. 闭源产品需分离插件代码与自有代码
+> [完整条款](https://www.mozilla.org/en-US/MPL/2.0/) | [常见问题](https://www.mozilla.org/en-US/MPL/2.0/FAQ/)
 
-## 开源协议
-本项目采用**MPL-2.0开源协议**：
-1. 所有衍生版本**必须开源**
-2. 修改版本需注明原始作者
-3. 其他要求待补充（欢迎提交Issue讨论）
-
-## 项目结构
+## 🧩 项目结构
+```
+access transformers
 HopeCraft/
 
-├── src/main/         - Java 源代码
+├── src/main/ # Java 业务逻辑
 
-├── .gitignore        - 版本控制忽略规则
+├── pom.xml # Maven 依赖及构建设置
 
-├── pom.xml           - Maven 依赖配置
+└── target/ # 编译产出目录 (构建后生成)
+```
+> 注：IDE相关文件（.iml）已通过.gitignore过滤
 
-├── HopeCraft.iml     - IDEA 项目文件
+## 🤝 贡献之道
+**我们急需以下帮助**：
+- ✅ 文档国际化（英文README优先）
 
-└── target/           - 编译输出目录（构建后生成）
 
+## 🚨 技术支持
+| 问题类型               | 响应时效     | 沟通渠道                                     |  
+|------------------------|------------|--------------------------------------------|  
+| **致命错误** (Crash)   | < 24小时    | [GitHub Issues](https://github.com/BusyMitten/HopeCraft/issues) |  
+| **功能请求**           | < 3天       | [Discussions](https://github.com/BusyMitten/HopeCraft/discussions) |  
+| **配置疑难**           | 社区互助     | [Wiki文档](https://github.com/BusyMitten/HopeCraft/wiki) |  
 
-## 参与贡献
-欢迎通过以下方式参与项目：
-1. 提交 Pull Request 改进代码
-2. 创建 Issue 报告问题或建议新功能
-3. 优化文档（包括本README）
-4. 测试并反馈兼容性问题
-
-> **重要提示**：所有贡献需遵循开源协议要求
-
-## 技术支持
-如需协助，请通过以下方式联系：
-- GitHub Issues: https://github.com/BusyMitten/HopeCraft/issues
-- 项目讨论区: https://nanoturtle1145.github.io
-
----
-
-**维护团队**: BusyMitten & NanoTurtle1145  （Hope Studio）
-
+---  
+**核心维护**: [BusyMitten](https://github.com/BusyMitten) | [NanoTurtle1145](https://github.com/NanoTurtle1145)  
 **最后更新**: 2025年8月8日
-
-## License  
-HopeCraft is licensed under **Mozilla Public License 2.0 (MPL-2.0)**.  
-- Modifications must be open-sourced under MPL-2.0.  
-- Commercial use is permitted, but modified versions cannot be relicensed.
