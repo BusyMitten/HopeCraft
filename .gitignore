@@ -1,2 +1,18 @@
-# 项目排除路径
+# 编译文件
+*.class
+*.jar
+
+# 构建目录
 /target/
+/build/
+
+# 日志
+*.log
+logs/
+
+# IDE
+.idea/
+*.iml
+
+# 例外：不忽略关键配置
+!application-prod.yml
