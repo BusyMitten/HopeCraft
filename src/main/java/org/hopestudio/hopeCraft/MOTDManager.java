@@ -61,4 +61,35 @@ public class MOTDManager {
             plugin.getLogger().severe("保存MOTD配置失败: " + e.getMessage());
         }
     }
+    private String line1; // 第一行MOTD
+    private String line2; // 第二行MOTD
+
+
+
+    public void setMotd(String newLine1, String newLine2) {
+        line1 = newLine1;
+        line2 = newLine2;
+        motdConfig.set("motd.line1", line1.replace("§", "&"));
+        motdConfig.set("motd.line2", line2.replace("§", "&"));
+        saveConfig();
+        applyMotd();
+
+        // 长度校验（单行限制+总长度限制）
+        if (newLine1.length() > 60) {
+            plugin.getLogger().warning("MOTD第一行超过60字符限制，显示可能不全");
+        }
+        if (newLine2.length() > 60) {
+            plugin.getLogger().warning("MOTD第二行超过60字符限制，显示可能不全");
+        }
+        if ((newLine1 + newLine2).length() > 256) {
+            plugin.getLogger().warning("MOTD总长度超过256字符限制");
+        }
+    }
+
+
+
+    // 新增获取单行方法
+    public String getLine1() { return line1; }
+    public String getLine2() { return line2; }
+
 }

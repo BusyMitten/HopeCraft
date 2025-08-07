@@ -574,15 +574,19 @@ public final class HopeCraft extends JavaPlugin {
         birthdayItem.setItemMeta(birthdayMeta);
         menu.setItem(4, birthdayItem); // 放在第4格
 
-        // 添加MOTD按钮 (位置33)
+        // MOTD菜单项（位置33）
         ItemStack motdItem = new ItemStack(Material.OAK_SIGN);
         ItemMeta motdMeta = motdItem.getItemMeta();
         motdMeta.setDisplayName(ChatColor.BLUE + "修改服务器MOTD");
-        motdMeta.setLore(Arrays.asList(
-                ChatColor.GRAY + "当前MOTD:",
-                ChatColor.WHITE + motdManager.getMotd(),
-                ChatColor.YELLOW + "点击查看/修改"
-        ));
+
+        // 双层显示Lore
+        List<String> motdLore = new ArrayList<>();
+        motdLore.add(ChatColor.GRAY + "当前MOTD:");
+        motdLore.add(ChatColor.WHITE + motdManager.getLine1());
+        motdLore.add(ChatColor.WHITE + motdManager.getLine2());
+        motdLore.add(ChatColor.YELLOW + "点击查看/修改");
+
+        motdMeta.setLore(motdLore);
         motdItem.setItemMeta(motdMeta);
         menu.setItem(33, motdItem);
 
@@ -617,6 +621,40 @@ public final class HopeCraft extends JavaPlugin {
                 sender.sendMessage(ChatColor.RED + "权限不足！");
                 return true;
             }
+            //motd
+            if (cmd.getName().equalsIgnoreCase("motd")) {
+                if (!sender.hasPermission("hopecraft.admin")) {
+                    sender.sendMessage(ChatColor.RED + "你没有权限修改MOTD！");
+                    return true;
+                }
+
+                if (args.length == 0) {
+                    // 显示当前双层MOTD
+                    sender.sendMessage(ChatColor.GOLD + "当前MOTD:");
+                    sender.sendMessage(ChatColor.GREEN + "第一行: " + ChatColor.RESET + motdManager.getLine1());
+                    sender.sendMessage(ChatColor.GREEN + "第二行: " + ChatColor.RESET + motdManager.getLine2());
+                    sender.sendMessage(ChatColor.YELLOW + "使用 /motd <第一行> \\n <第二行> 修改");
+                    return true;
+                }
+
+                // 解析双层MOTD（支持\n或直接空格分隔）
+                String fullText = String.join(" ", args);
+                String[] lines = fullText.split("\\\\n", 2); // 按显式\n分割
+
+                if (lines.length < 2) {
+                    // 智能分割：前30字符作为第一行
+                    int splitIndex = Math.min(30, fullText.length());
+                    String line1 = fullText.substring(0, splitIndex);
+                    String line2 = fullText.substring(splitIndex).trim();
+                    motdManager.setMotd(line1, line2);
+                } else {
+                    motdManager.setMotd(lines[0], lines[1]);
+                }
+
+                sender.sendMessage(ChatColor.GREEN + "MOTD已更新为双层格式");
+                return true;
+            }
+
             // 处理子命令
             if (args.length > 0) {
                 // === ShiftAndF 子命令 ===
@@ -1142,7 +1180,7 @@ public final class HopeCraft extends JavaPlugin {
 
 }
 //神必彩蛋
-
+//银梦梗你赢了 No.2
 
 
 

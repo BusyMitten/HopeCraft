@@ -1,2 +1,4 @@
-# MOTD配置
-motd: "§6欢迎来到HopeCraft服务器§e | 版本1.21+"
+# 新版双层MOTD配置结构
+motd:
+  line1: "§6欢迎来到HopeCraft服务器"
+  line2: "§e插件升级到1.6.8 | 每日签到福利拿到手软！"
