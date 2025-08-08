@@ -1,8 +1,8 @@
-# HopeCraft - Bukkit 高可用功能增强插件
+# HopeCraft - Bukkit核心功能增强插件
 [![GitHub](https://img.shields.io/badge/GitHub-源码-blue?logo=github)](https://github.com/BusyMitten/HopeCraft)  
 [![License](https://img.shields.io/badge/License-MPL--2.0-orange)](https://www.mozilla.org/en-US/MPL/2.0/)
 
-专为 **Bukkit 1.21+** 设计的轻量级工具集，提供声明式菜单系统与核心增强功能，性能开销逼近零。
+专为 **Bukkit 1.21+** 设计的轻量级工具集。
 
 ## 🚀 核心价值
 - **声明式菜单引擎** - 通过YAML配置自定义GUI菜单，无需重载（以后会改，现在是写进代码里的。如果您写出了这个功能请不要吝啬您的pull requests！）
@@ -15,7 +15,7 @@
 | **服务端核心**   | Bukkit 1.21+ | [PaperMC](https://papermc.io/) |  
 | **构建工具**     | Maven 3.9+   | [Maven](https://maven.apache.org/) |  
 
-## 🛠️ 构建指南（Linux/macOS）
+## 🛠️ 构建指南（Linux/macOS（Windows建议使用Git Bash））
 ```
 bash
 
