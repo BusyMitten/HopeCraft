@@ -75,7 +75,8 @@ public final class HopeCraft extends JavaPlugin {
         // 加载生日祝福语配置
         saveResource("birthday.yml", false);
         loadBirthdayMessages();
-        
+
+
         // 定时检查生日（每天0点检查一次）
         scheduleBirthdayCheck();
         

@@ -30,7 +30,27 @@ public class MOTDManager {
 
     public void reloadConfig() {
         motdConfig = YamlConfiguration.loadConfiguration(configFile);
-        currentMotd = motdConfig.getString("motd", "§6欢迎来到HopeCraft服务器§e | 版本1.21+");
+        
+        // 加载双层MOTD配置
+        line1 = motdConfig.getString("motd.line1", "§6欢迎来到HopeCraft服务器");
+        line2 = motdConfig.getString("motd.line2", "§e插件升级到1.6.8 | 每日签到福利拿到手软！");
+        
+        // 兼容旧版配置
+        if (motdConfig.contains("motd") && !motdConfig.contains("motd.line1")) {
+            currentMotd = motdConfig.getString("motd");
+            // 尝试分割旧版MOTD为两行
+            if (currentMotd != null && currentMotd.contains("|")) {
+                String[] parts = currentMotd.split("\\|", 2);
+                line1 = parts[0].trim();
+                line2 = parts.length > 1 ? parts[1].trim() : "";
+            } else {
+                line1 = currentMotd;
+                line2 = "";
+            }
+            // 保存为新格式
+            setMotd(line1, line2);
+        }
+        
         applyMotd();
     }
 
@@ -50,8 +70,12 @@ public class MOTDManager {
     }
 
     private void applyMotd() {
+        // 组合双层MOTD
+        currentMotd = line1 + "\n" + line2;
         Bukkit.getServer().setMotd(currentMotd);
-        plugin.getLogger().info("MOTD已更新: " + currentMotd.replace("§", "&"));
+        plugin.getLogger().info("MOTD已更新: ");
+        plugin.getLogger().info("第一行: " + line1.replace("§", "&"));
+        plugin.getLogger().info("第二行: " + line2.replace("§", "&"));
     }
 
     private void saveConfig() {

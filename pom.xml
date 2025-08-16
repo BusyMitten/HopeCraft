@@ -6,7 +6,7 @@
 
     <groupId>org.hopestudio</groupId>
     <artifactId>HopeCraft</artifactId>
-    <version>1.6.8</version>
+    <version>1.6.9-beta</version>
     <packaging>jar</packaging>
 
     <name>HopeCraft</name>
