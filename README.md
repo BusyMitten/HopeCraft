@@ -43,18 +43,7 @@ HopeCraft/
 └── target/ # 编译产出目录 (构建后生成)
 ```
 > 注：IDE相关文件（.iml）已通过.gitignore过滤
-
-## 🤝 贡献之道
-**我们急需以下帮助**：
-- ✅ 文档国际化（英文README优先）
-
-
-## 🚨 技术支持
-| 问题类型               | 响应时效     | 沟通渠道                                     |  
-|------------------------|------------|--------------------------------------------|  
-| **致命错误** (Crash)   | < 24小时    | [GitHub Issues](https://github.com/BusyMitten/HopeCraft/issues) |  
-| **功能请求**           | < 3天       | [Discussions](https://github.com/BusyMitten/HopeCraft/discussions) |  
-| **配置疑难**           | 社区互助     | [Wiki文档](https://github.com/BusyMitten/HopeCraft/wiki) |  
+            
 
 ---  
 **核心维护**: [BusyMitten](https://github.com/BusyMitten) | [NanoTurtle1145](https://github.com/NanoTurtle1145)  
