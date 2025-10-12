@@ -14,7 +14,7 @@
 | **服务端核心**   | Bukkit 1.21+ | [PaperMC](https://papermc.io/) |  
 | **构建工具**     | Maven 3.9+   | [Maven](https://maven.apache.org/) |  
 
-## 🛠️ 构建指南（Linux/macOS（Windows建议使用Git Bash））
+## 🛠️ 如何构建（Linux/macOS（Windows建议使用Git Bash））
 ```
 bash
 
@@ -24,19 +24,12 @@ cd HopeCraft
 
 mvn clean package -DskipTests # 产出位于 target/
 ```
-> **开发建议**：使用 [IntelliJ IDEA](https://www.jetbrains.com/idea/) 导入 Maven 项目
 
 ## 📦 安装流程
 1. 将 `target/HopeCraft-*.jar` 置于服务端 `plugins/`
 2. **重启服务端**（首次加载必需）
 3. 按需编辑生成的 `plugins/HopeCraft/config.yml`
 
-## ⚖️ 开源协议
-**MPL-2.0** 强制约束：
-1. 所有衍生代码必须开源
-2. 修改文件头部保留原始版权声明
-3. 闭源产品需分离插件代码与自有代码
-> [完整条款](https://www.mozilla.org/en-US/MPL/2.0/) | [常见问题](https://www.mozilla.org/en-US/MPL/2.0/FAQ/)
 
 ## 🧩 项目结构
 ```
