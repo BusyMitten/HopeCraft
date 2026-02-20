@@ -57,7 +57,7 @@ public final class HopeCraft extends JavaPlugin {
         Objects.requireNonNull(getCommand("hopecraft")).setExecutor(this);
         Objects.requireNonNull(getCommand("skull")).setExecutor(this);
         Objects.requireNonNull(getCommand("birthday")).setExecutor(this);
-        
+       // Objects.requireNonNull(getCommand("warp")).setTabCompleter(this);
         Objects.requireNonNull(getCommand("hopecraft")).setTabCompleter(this);
 
         // 初始化生日管理器
@@ -525,7 +525,7 @@ public final class HopeCraft extends JavaPlugin {
         teleportMeta.setDisplayName(ChatColor.GREEN + "传送到主城");
         teleportMeta.setLore(List.of(ChatColor.GRAY + "点击传送到服务器主城"));
         teleportItem.setItemMeta(teleportMeta);
-        menu.setItem(10, teleportItem);
+        menu.setItem(49, teleportItem);
 
         // 签到按钮
         ItemStack signItem = new ItemStack(Material.GOLD_BLOCK);
@@ -554,7 +554,7 @@ public final class HopeCraft extends JavaPlugin {
         fireworkMeta.setDisplayName(ChatColor.RED + "发射烟花");
         fireworkMeta.setLore(List.of(ChatColor.GRAY + "点击发射烟花"));
         fireworkItem.setItemMeta(fireworkMeta);
-        menu.setItem(3, fireworkItem);
+        menu.setItem(7, fireworkItem);
 
         // 获取头颅按钮
         ItemStack skullItem = new ItemStack(Material.PLAYER_HEAD);
@@ -575,12 +575,12 @@ public final class HopeCraft extends JavaPlugin {
         birthdayItem.setItemMeta(birthdayMeta);
         menu.setItem(4, birthdayItem); // 放在第4格
 
-        // MOTD菜单项（位置33）
+        // MOTD菜单项（位置31）
         ItemStack motdItem = new ItemStack(Material.OAK_SIGN);
         ItemMeta motdMeta = motdItem.getItemMeta();
         motdMeta.setDisplayName(ChatColor.BLUE + "修改服务器MOTD");
 
-        // 双层显示Lore
+
         List<String> motdLore = new ArrayList<>();
         motdLore.add(ChatColor.GRAY + "当前MOTD:");
         motdLore.add(ChatColor.WHITE + motdManager.getLine1());
@@ -589,7 +589,7 @@ public final class HopeCraft extends JavaPlugin {
 
         motdMeta.setLore(motdLore);
         motdItem.setItemMeta(motdMeta);
-        menu.setItem(33, motdItem);
+        menu.setItem(31, motdItem);
 
         player.openInventory(menu);//后面别加东西
     }
@@ -893,7 +893,7 @@ public final class HopeCraft extends JavaPlugin {
         public void onInventoryClick(InventoryClickEvent event) {
             if (!(event.getWhoClicked() instanceof Player player)) return;
             // MOTD按钮处理
-            if (event.getView().getTitle().equals("HopeCraft 主菜单") && event.getRawSlot() == 33) {
+            if (event.getView().getTitle().equals("HopeCraft 主菜单") && event.getRawSlot() == 31) {
                 event.setCancelled(true);
 
                 Player p = (Player) event.getWhoClicked(); // 使用新变量名
@@ -902,15 +902,14 @@ public final class HopeCraft extends JavaPlugin {
             }
             ItemStack clicked = event.getCurrentItem();
             if (clicked == null) return;
-            
+
             // 主菜单处理
             if (event.getView().getTitle().equals("HopeCraft 主菜单")) {
                 event.setCancelled(true);
 
                 switch (event.getRawSlot()) {
-                    case 10: // 传送
-                        player.teleport(Objects.requireNonNull(Bukkit.getWorld("world")).getSpawnLocation());
-                        player.sendMessage(ChatColor.GREEN + "已传送到主城！");
+                    case 49: // 传送
+                        player.performCommand("warp 主城");
                         player.closeInventory();
                         break;
 
@@ -928,7 +927,7 @@ public final class HopeCraft extends JavaPlugin {
                         player.closeInventory();
                         break;
 
-                    case 3: // 烟花
+                    case 7: // 烟花
                         player.performCommand("fireworks");
                         player.sendMessage(ChatColor.RED + "烟花已发射！");
                         player.closeInventory();
@@ -939,7 +938,7 @@ public final class HopeCraft extends JavaPlugin {
                         player.sendMessage(ChatColor.GREEN + "已获取你的头颅！输入 /skull <玩家名> 可获取其他玩家头颅");
                         player.closeInventory();
                         break;
-                        
+
                     case 4: // 生日信息
                         openBirthdayMenu(player);
                         break;
@@ -956,17 +955,17 @@ public final class HopeCraft extends JavaPlugin {
             // 生日子菜单处理
             else if (event.getView().getTitle().equals("生日信息")) {
                 event.setCancelled(true);
-                
+
                 switch (event.getRawSlot()) {
                     case 0: // 设置生日
                         player.sendMessage(ChatColor.GREEN + "请使用命令 /birthday set <月> <日> 来设置生日");
                         player.closeInventory();
                         break;
-                        
+
                     case 4: // 查看生日详情
                         showBirthdayDetails(player);
                         break;
-                        
+
                     case 8: // 生日统计
                         showBirthdayStats(player);
                         break;

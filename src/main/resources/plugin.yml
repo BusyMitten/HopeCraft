@@ -1,6 +1,6 @@
 name: HopeCraft
 main: org.hopestudio.hopeCraft.HopeCraft
-version: 1.6.9-beta
+version: 1.6.9
 api-version: "1.21"
 commands:
   hopecraft:
@@ -12,7 +12,7 @@ commands:
   birthday:
     description: 生日相关命令
     usage: /birthday <set|confirm|broadcast>
-  # ====== 新增MOTD命令 ====== #
+
   motd:
     description: 修改服务器MOTD（每日消息）
     usage: /motd [新内容]
@@ -23,7 +23,7 @@ permissions:
     # 明确MOTD权限继承关系
     children:
       hopecraft.motd: true
-  # ====== 新增MOTD专属权限节点 ====== #
+
   hopecraft.motd:
     description: 允许修改服务器MOTD
     default: false  # 默认关闭，需通过hopecraft.admin继承或单独分配
