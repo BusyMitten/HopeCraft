@@ -1,11 +1,12 @@
 name: HopeCraft
 main: org.hopestudio.hopeCraft.HopeCraft
-version: 1.6.9
-api-version: "1.21"
+version: ${project.version}
+api-version: "26.2"
 commands:
   hopecraft:
     description: 打开HopeCraft主菜单
     usage: /hopecraft
+    permission: hopecraft.use
   skull:
     description: 获取玩家头颅
     usage: /skull [玩家名]
@@ -17,6 +18,9 @@ commands:
     description: 修改服务器MOTD（每日消息）
     usage: /motd [新内容]
 permissions:
+  hopecraft.use:
+    description: 允许打开HopeCraft主菜单（普通玩家）
+    default: false  # 通过 LuckPerms 的 default 组显式授予
   hopecraft.admin:
     description: HopeCraft管理员权限
     default: op  # 仅OP默认拥有此权限

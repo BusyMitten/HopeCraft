@@ -3,4 +3,19 @@ shiftF-enabled: true
 shiftF-commands:
   - "p:hopecraft"
 
-# 其他配置项可以放在这里...
+# 每日签到奖励配置
+# 每一项代表一份奖励，字段说明：
+#   material: 物品英文名（参考 https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html）
+#   min:      发放数量下限（含）
+#   max:      发放数量上限（含）
+# 数量会在 min~max 之间随机。修改后重启服务器或重载配置即可生效。
+sign-rewards:
+  - material: DIAMOND
+    min: 1
+    max: 5
+  - material: EMERALD
+    min: 1
+    max: 3
+  - material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
+    min: 1
+    max: 7

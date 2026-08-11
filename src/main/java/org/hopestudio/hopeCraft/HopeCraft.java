@@ -36,6 +36,21 @@ public final class HopeCraft extends JavaPlugin {
     private File dataFolder;
     private Birthday birthdayManager;
 
+    // === 签到奖励配置（由 config.yml 加载） ===
+    private final List<SignReward> signRewards = new ArrayList<>();
+
+    private static final class SignReward {
+        final Material material;
+        final int min;
+        final int max;
+
+        SignReward(Material material, int min, int max) {
+            this.material = material;
+            this.min = min;
+            this.max = max;
+        }
+    }
+
     // === ShiftAndF 功能整合 ===============================
     boolean shiftFEnabled = true;
     boolean hasPapi;
@@ -47,6 +62,9 @@ public final class HopeCraft extends JavaPlugin {
         // === ShiftAndF 初始化 ===
         shiftFCommands = new LinkedList<>();
         initShiftFConfig();
+
+        // 加载签到奖励配置（依赖 initShiftFConfig 中的 saveDefaultConfig）
+        loadSignRewards();
 
         // ===== 原 HopeCraft 初始化 =====
         // 初始化数据目录
@@ -435,15 +453,15 @@ public final class HopeCraft extends JavaPlugin {
 
     private void giveSignReward(Player player) {
         Random random = new Random();
-        Map<Material, Integer> rewards = Map.of(
-                Material.DIAMOND, random.nextInt(5) + 1,
-                Material.EMERALD, random.nextInt(3) + 1,
-                Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE, random.nextInt(7) + 1
-        );
+        if (signRewards.isEmpty()) {
+            player.sendMessage(ChatColor.RED + "签到奖励未配置，请联系管理员");
+            return;
+        }
 
         // 尝试添加到背包
-        for (Map.Entry<Material, Integer> entry : rewards.entrySet()) {
-            ItemStack item = new ItemStack(entry.getKey(), entry.getValue());
+        for (SignReward reward : signRewards) {
+            int amount = random.nextInt(reward.max - reward.min + 1) + reward.min;
+            ItemStack item = new ItemStack(reward.material, amount);
             if (player.getInventory().firstEmpty() != -1) {
                 player.getInventory().addItem(item);
             } else {
@@ -452,6 +470,61 @@ public final class HopeCraft extends JavaPlugin {
         }
 
         player.sendMessage(ChatColor.GREEN + "签到成功！奖励已发放");
+    }
+
+    // 从 config.yml 的 sign-rewards 段加载签到奖励配置
+    private void loadSignRewards() {
+        signRewards.clear();
+        List<? extends Map<?, ?>> list = getConfig().getMapList("sign-rewards");
+        if (list == null || list.isEmpty()) {
+            getLogger().warning("未找到签到奖励配置，已生成默认配置到 config.yml");
+            List<Map<String, Object>> defaults = new ArrayList<>();
+            defaults.add(createRewardMap("DIAMOND", 1, 5));
+            defaults.add(createRewardMap("EMERALD", 1, 3));
+            defaults.add(createRewardMap("NETHERITE_UPGRADE_SMITHING_TEMPLATE", 1, 7));
+            getConfig().set("sign-rewards", defaults);
+            saveConfig();
+            list = defaults;
+        }
+
+        for (Map<?, ?> entry : list) {
+            Object rawMat = entry.get("material");
+            String matName = rawMat == null ? null : rawMat.toString();
+            if (matName == null || matName.isEmpty()) {
+                getLogger().warning("签到奖励配置项缺少 material，已跳过");
+                continue;
+            }
+            Material mat = Material.matchMaterial(matName);
+            if (mat == null || !mat.isItem()) {
+                getLogger().warning("签到奖励配置中存在无效物品: " + matName + "，已跳过");
+                continue;
+            }
+            int min = getInt(entry, "min", 1);
+            int max = getInt(entry, "max", min);
+            if (max < min) max = min;
+            signRewards.add(new SignReward(mat, min, max));
+        }
+        getLogger().info("已加载 " + signRewards.size() + " 项签到奖励");
+    }
+
+    private Map<String, Object> createRewardMap(String material, int min, int max) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("material", material);
+        map.put("min", min);
+        map.put("max", max);
+        return map;
+    }
+
+    private int getInt(Map<?, ?> map, String key, int def) {
+        Object v = map.get(key);
+        if (v instanceof Number n) return n.intValue();
+        if (v instanceof String s) {
+            try {
+                return Integer.parseInt(s);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return def;
     }
 
     // ========== 统计系统 ==========
@@ -618,41 +691,8 @@ public final class HopeCraft extends JavaPlugin {
                 sender.sendMessage(ChatColor.RED + "只有玩家可以使用此命令！");
                 return true;
             }
-            if (!sender.hasPermission("hopecraft.admin")) {  // 直接使用yml中的节点名
+            if (!sender.hasPermission("hopecraft.use")) {
                 sender.sendMessage(ChatColor.RED + "权限不足！");
-                return true;
-            }
-            //motd
-            if (cmd.getName().equalsIgnoreCase("motd")) {
-                if (!sender.hasPermission("hopecraft.admin")) {
-                    sender.sendMessage(ChatColor.RED + "你没有权限修改MOTD！");
-                    return true;
-                }
-
-                if (args.length == 0) {
-                    // 显示当前双层MOTD
-                    sender.sendMessage(ChatColor.GOLD + "当前MOTD:");
-                    sender.sendMessage(ChatColor.GREEN + "第一行: " + ChatColor.RESET + motdManager.getLine1());
-                    sender.sendMessage(ChatColor.GREEN + "第二行: " + ChatColor.RESET + motdManager.getLine2());
-                    sender.sendMessage(ChatColor.YELLOW + "使用 /motd <第一行> \\n <第二行> 修改");
-                    return true;
-                }
-
-                // 解析双层MOTD（支持\n或直接空格分隔）
-                String fullText = String.join(" ", args);
-                String[] lines = fullText.split("\\\\n", 2); // 按显式\n分割
-
-                if (lines.length < 2) {
-                    // 智能分割：前30字符作为第一行
-                    int splitIndex = Math.min(30, fullText.length());
-                    String line1 = fullText.substring(0, splitIndex);
-                    String line2 = fullText.substring(splitIndex).trim();
-                    motdManager.setMotd(line1, line2);
-                } else {
-                    motdManager.setMotd(lines[0], lines[1]);
-                }
-
-                sender.sendMessage(ChatColor.GREEN + "MOTD已更新为双层格式");
                 return true;
             }
 

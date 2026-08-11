@@ -14,8 +14,8 @@
 ## ⚙️ 硬性要求
 | 组件            | 最低版本       | 推荐链接                     |  
 |----------------|--------------|----------------------------|  
-| **Java**       | JDK 17       | [Adoptium](https://adoptium.net/) |  
-| **服务端核心**   | Bukkit 1.21+ | [PaperMC](https://papermc.io/) |  
+| **Java**       | JDK 25       | [Adoptium](https://adoptium.net/) |  
+| **服务端核心**   | Paper 26.2 (Minecraft 26.2) | [PaperMC](https://papermc.io/) |  
 | **构建工具**     | Maven 3.9+   | [Maven](https://maven.apache.org/) |  
 
 ## 🛠️ 如何构建（Linux/macOS（Windows建议使用Git Bash））
