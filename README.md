@@ -47,9 +47,10 @@ HopeCraft/
 └── target/ # 编译产出目录 (构建后生成)
 ```
 
-            
+## 文档
+文档处于./src/docs中，目前只写了签到奖励修改教程和对照表。
 
 ---  
 **核心维护**: [BusyMitten](https://github.com/BusyMitten) | [NanoTurtle1145](https://github.com/NanoTurtle1145)  
-**最后更新**: 2026年2月20日
+**最后更新**: 2026年8月11日
 
