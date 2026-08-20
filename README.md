@@ -2,6 +2,14 @@
 [![GitHub](https://img.shields.io/badge/GitHub-源码-blue?logo=github)](https://github.com/BusyMitten/HopeCraft)  
 [![License](https://img.shields.io/badge/License-MPL--2.0-orange)](https://www.mozilla.org/en-US/MPL/2.0/)
 
+> ⚠️ **本项目已停止维护（EOL）**
+>
+> HopeCraft 1.7.0 已进入 End of Life 状态，不再进行功能更新与维护。
+> 请使用新版 **HopeCraft-NG**：[https://github.com/busysheng/hopecraft-ng](https://github.com/busysheng/hopecraft-ng)
+>
+> NG 版继承了 1.7.0 的全部功能（含 `/suicide`、`/heal`、`/feed` 等实用命令），
+> 并移除了 Shift+F 快捷键开关与刷屏日志输出，主包名变更为 `org.hopestudio`。
+
 专为 **Bukkit 1.21+** 设计的轻量级工具集。
 
 ## 🚀 核心功能

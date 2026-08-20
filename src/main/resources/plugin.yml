@@ -17,6 +17,18 @@ commands:
   motd:
     description: 修改服务器MOTD（每日消息）
     usage: /motd [新内容]
+
+  suicide:
+    description: 结束自己的生命
+    usage: /suicide
+  heal:
+    description: 恢复生命值与饱食度
+    usage: /heal
+    permission: hopecraft.heal
+  feed:
+    description: 恢复饱食度
+    usage: /feed
+    permission: hopecraft.feed
 permissions:
   hopecraft.use:
     description: 允许打开HopeCraft主菜单（普通玩家）
@@ -31,3 +43,10 @@ permissions:
   hopecraft.motd:
     description: 允许修改服务器MOTD
     default: false  # 默认关闭，需通过hopecraft.admin继承或单独分配
+
+  hopecraft.heal:
+    description: 允许使用 /heal 恢复生命与饱食度
+    default: op
+  hopecraft.feed:
+    description: 允许使用 /feed 恢复饱食度
+    default: op
